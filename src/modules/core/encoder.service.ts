@@ -11,6 +11,7 @@ import EventEmitter from 'events'
 import PouchDB from 'pouchdb'
 import PouchdbFind from 'pouchdb-find'
 import PouchdbUpsert from 'pouchdb-upsert'
+import { EncodeStatus } from '../encoder.model';
 PouchDB.plugin(PouchdbFind);
 PouchDB.plugin(PouchdbUpsert);
 
@@ -39,15 +40,7 @@ interface EncodeInput {
     type: string
     url: string
 }
-enum EncodeStatus {
-    PENDING = 'pending',
-    QUEUED = 'queued',
-    LOADING = 'loading',
-    RUNNING = 'running',
-    FAILED = 'failed',
-    UPLOADING = 'uploading',
-    COMPLETE = 'complete',
-}
+
 const MAX_BIT_RATE = {
     '1080': '2760k',
     '720': '1327k',
@@ -126,9 +119,16 @@ const tutils = {
 export class EncoderService {
     self: CoreService
     pouch: PouchDB
+    events: EventEmitter
+
+    updateSubscriptions: Set<Object>
     constructor(self) {
         this.self = self;
         this.pouch = new PouchDB("encoder.db");
+
+        this.events = new EventEmitter()
+
+        this.updateSubscriptions = new Set()
     }
 
     async updateJob(streamId, updateData ) {
@@ -173,6 +173,7 @@ export class EncoderService {
             status: EncodeStatus.RUNNING
         })
         console.log(jobInfo)
+        let stage = 0;
         let sizes = []
         let codecData;
         let duration;
@@ -181,12 +182,19 @@ export class EncoderService {
             sizes.push(profile.size);
             ret.size(profile.size);
             ret.on('progress', ((progress) => {
-                //this.events.emit("progress", jobInfo.id, progress)
-                console.log(progress)
-                this.pouch.upsert(jobInfo.id, doc => {
+                console.log(jobInfo)
+                for(let key in progress) {
+                    progress[key] = progress[key] || 0
+                }
+                this.events.emit("job.progress", streamId.toString(), {
+                    stage,
+                    stages: jobInfo.profiles.length,
+                    progress
+                })
+                /*this.pouch.upsert(jobInfo.id, doc => {
                     doc.progress = progress
                     return doc
-                })
+                })*/
             }).bind(this))
             ret.on('end', () => {
                 //this.events.emit('done', jobInfo.id)
@@ -203,19 +211,21 @@ export class EncoderService {
                     duration = codecData.duration;
                 })
             })
+
             ret.videoBitrate(MAX_BIT_RATE[String(profile.size.split('x')[1])])
             fs.mkdirSync(Path.join(workfolder, `${String(profile.size.split('x')[1])}p`))
+
             //ret.save(path.join(workfolder, `${String(size.split('x')[1])}p`, 'index.m3u8'))
             console.log(Path.join(workfolder, `${String(profile.size.split('x')[1])}p`, 'index.m3u8'))
+
             ret.addOption(`-segment_format`, "mpegts")
             ret.addOption('-segment_list', Path.join(workfolder, `${String(profile.size.split('x')[1])}p`, 'index.m3u8'))
             ret.save(Path.join(workfolder + '/' + `${String(profile.size.split('x')[1])}p`, `${String(profile.size.split('x')[1])}p_%d.ts`))
             await promy;
 
-            this.pouch.upsert(jobInfo.id, (doc) => {
-
-            })
+            stage = stage + 1;
         }
+        
 
         var manifest = this._generateManifest(codecData, sizes)
         fs.writeFileSync(Path.join(workfolder, "manifest.m3u8"), manifest)
@@ -226,14 +236,18 @@ export class EncoderService {
             })
             const ipfsHash = await this.self.ipfs.add(globSource(workfolder, {recursive: true} ), {pin:false})
             fs.unlink(workfolder, () => {})
-            console.log(ipfsHash)
+            
             this.updateJob(streamId, {
-                status: EncodeStatus.COMPLETE
+                status: EncodeStatus.COMPLETE,
+                outCid: ipfsHash.cid.toString(),
+                total_size: ipfsHash.size
             })
             return ipfsHash.cid.toString();
-        } catch {
+        } catch (ex) {
+            this.updateJob(streamId, {
+                status: EncodeStatus.FAILED
+            })
             fs.unlink(workfolder, () => {})
-
         }
     }
     async executeJob(jobInfoOrId: Object|string) {
@@ -252,6 +266,10 @@ export class EncoderService {
         } else {
             throw new Error('Invalid input')
         }
+        this.events.on('job.progress', (e, b) => {
+            console.log('receiving progress here 100%')
+            console.log(e,b)
+        })
         
         const out = await this.executeJobRaw(jobInfo, streamId)
         console.log(out)
@@ -279,7 +297,7 @@ export class EncoderService {
     async cleanUpJob() {
 
     }
-    async createJob(sourceCID, peerId, client_id) {
+    async createJob(sourceCID, peerId, client_id?) {
         const id = uuid();
         const tileDocument = await TileDocument.create(this.self.ceramic, {
             id,
@@ -327,6 +345,8 @@ export class EncoderService {
         }
     }
     async start() {
-        
+        /*const data = await this.createJob('Qma9ZjjtH7fdLWSrMU43tFihvSN59aQdes7f5KW6vGGk6e', 'QmctF7GPunpcLu3Fn77Ypo657TA9GpTiipSDUUMoD2k5Kq', 'did:3:kjzl6cwe1jw14aijwpxwaa1ybg708bp9n5jqt8q89j6yrdqvt8tfxdxw1q5dpxh')
+        console.log(data)
+        this.executeJob(data.streamId)*/
     }
 }

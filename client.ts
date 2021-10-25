@@ -7,11 +7,18 @@ import MulticastDNS  from 'libp2p-mdns'
 import Bootstrap from 'libp2p-bootstrap'
 import DHT from 'libp2p-kad-dht'
 import PeerId from 'peer-id'
+import { CeramicClient } from '@ceramicnetwork/http-client'
 
 import Pushable from 'it-pushable'
 import {pipe} from 'it-pipe'
 
-import {encode} from './src/modules/libp2p/frame-codec.util'
+import {decode, encode} from './src/modules/libp2p/frame-codec.util'
+import { MESSAGE_TYPES } from './src/modules/libp2p/messages.model'
+import { TileDocument } from '@ceramicnetwork/stream-tile'
+import { EncodeStatus } from './src/modules/encoder.model'
+import logUpdate from 'log-update';
+import cli from 'cli-ux'
+
 
 const ClientKey =
 {
@@ -22,8 +29,10 @@ const ClientKey =
   
 void (async () => {
 
+  
     console.log('P2P interface starting up')
-   
+
+    const ceramic = new CeramicClient('https://ceramic-clay.3boxlabs.com') //Using the public node for now.
     const idListener = await PeerId.createFromJSON(ClientKey)
     const libp2p = await Libp2p.create({
         peerId: idListener,
@@ -35,7 +44,7 @@ void (async () => {
           dht: DHT
         },
         addresses: {
-            listen: ['/ip4/10.0.1.188/tcp/1446']
+            listen: ['/ip4/10.0.1.188/tcp/14446']
         },
         config: {
             peerDiscovery: {
@@ -73,27 +82,58 @@ void (async () => {
     await libp2p.start()
     console.log(libp2p.peerId.toJSON())
     setInterval(() => {
-        console.log(libp2p.connections.size)
+        //console.log(libp2p.connections.size)
     }, 5000)
-    const handler = ({ connection, stream, protocol }) => {
+    const handler = async ({ connection, stream, protocol }) => {
         // use stream or connection according to the needs
         console.log(connection, stream, protocol)
+        for await(let item of stream.source) {
+          console.log(item)
+        }
       }
       
     libp2p.handle('/spk-video-encoder/1.0.0', handler)
-    const output = await libp2p.dialProtocol("/ip4/10.0.1.188/tcp/1445/p2p/QmctF7GPunpcLu3Fn77Ypo657TA9GpTiipSDUUMoD2k5Kq", '/spk-video-encoder/1.0.0')
+    const output = await libp2p.dialProtocol("/ip4/10.0.1.188/tcp/14445/p2p/QmctF7GPunpcLu3Fn77Ypo657TA9GpTiipSDUUMoD2k5Kq", '/spk-video-encoder/1.0.0')
     console.log(output)
+      
+    
+    cli.action.start('Encoding Video')
+    // do some action...
+    // stop the spinner
+    //cli.action.stop() // shows 'starting a process... done'
+    
+    void (async () => {
+      let encodeId;
+      void (async () => {
+        for await(let item of output.stream.source) {
+        const decodedMessage = decode(item._bufs[0])
+        console.log(decodedMessage)
+        if(decodedMessage.type === MESSAGE_TYPES.RESPONE_ENCODE_JOB) {
+          encodeId = decodedMessage.streamId
+          pushable.push(encode({
+            type: MESSAGE_TYPES.SUBSCRIBE_UPDATE,
+            streamId: decodedMessage.streamId
+          }))
+          let encodeDoc = await TileDocument.load(ceramic, encodeId)
+          setInterval(async () => {
+            await encodeDoc.sync()
+            const contentData = encodeDoc.content as any;
+            if(contentData.status === EncodeStatus.COMPLETE) {
+              console.log(`Job complete, IPFS Hash is ${contentData.outCid}`)
+              cli.action.stop()
+              process.exit(0)
+            }
+          }, 1000)
+        }
+      }})()
+    })()
     const pushable = Pushable()
     pipe(pushable, output.stream)
     pushable.push(encode({
-        message: "amazing work! Partner! "
+      
+      type: MESSAGE_TYPES.REQUEST_ENCODE_JOB,
+      ipfsHash: 'Qma9ZjjtH7fdLWSrMU43tFihvSN59aQdes7f5KW6vGGk6e'
     }))
-    pushable.push(encode({
-        message: "amazing work! Partner! "
-    }))
-    pushable.push(encode({
-        message: "amazing work! Partner! "
-    }))
-    pushable.end()
-    console.log(output.stream.close())
+    //pushable.end()
+    //console.log(output.stream.close())
 })()
