@@ -2,7 +2,7 @@ import CeramicHTTP from '@ceramicnetwork/http-client'
 import { ConfigService } from './config.service'
 import IPFSHTTP from 'ipfs-http-client'
 import { CoreService } from './modules/core/core.service'
-
+import {EncoderApiModule} from './api/index'
 
 
 async function startup(): Promise<void> {
@@ -12,6 +12,9 @@ async function startup(): Promise<void> {
 
   const instance = new CoreService(ceramic)
   await instance.start()
+
+  const api = new EncoderApiModule(4005, instance)
+  await api.listen()
 
 }
 

@@ -90,7 +90,7 @@ export class Lib2pService {
               dht: DHT
             },
             addresses: {
-                listen: ['/ip4/10.0.1.188/tcp/14445/']
+                listen: ['/ip4/0.0.0.0/tcp/14445/']
             },
             config: {
                 peerDiscovery: {
@@ -128,7 +128,7 @@ export class Lib2pService {
         await this.libp2p.start()
         console.log(this.libp2p.addresses)
         setInterval(() => {
-            console.log(this.libp2p.connections.size)
+            //console.log(this.libp2p.connections.size)
         }, 5000)
         const handler = async ({ connection, stream, protocol }) => {
             // use stream or connection according to the needs
@@ -140,6 +140,6 @@ export class Lib2pService {
           }
           
         this.libp2p.handle('/spk-video-encoder/1.0.0', this.connectionHandler)
-        this.libp2p.dialProtocol(this.libp2p.peerId, '/spk-video-encoder/1.0.0')
+        //this.libp2p.dialProtocol(this.libp2p.peerId, '/spk-video-encoder/1.0.0')
     }
 }
