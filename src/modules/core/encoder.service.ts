@@ -144,8 +144,8 @@ export class EncoderService {
     content['updated_at'] = new Date().toISOString()
     await tileDoc.update(content)
     this.events.emit('job.status_update', {
-        content,
-        streamId
+      content,
+      streamId,
     })
   }
   async executeJobRaw(jobInfo, streamId) {
@@ -163,19 +163,38 @@ export class EncoderService {
 
     var codec = await new Promise((resolve, reject) =>
       ffmpeg.getAvailableEncoders(async (e, enc) => {
-        /*if (jobInfo.options.hwaccel !== null || jobInfo.options.hwaccel !== "none") {
-                for (var key of Object.keys(enc)) {
-                    if (key.includes(`h264_${jobInfo.options.hwaccel}`)) {
-                        return resolve(key)
-                    }
-                }
-            }*/
-        return resolve('h264_qsv')
+        /*if (jobInfo.options.hwaccel !== null || jobInfo.options.hwaccel !== 'none') {
+          for (var key of Object.keys(enc)) {
+            if (key.includes(`h264_${jobInfo.options.hwaccel}`)) {
+              return resolve(key)
+            }
+          }
+        }*/
+        for (var key of Object.keys(enc)) {
+          if (key.includes(`h264_qsv`)) {
+            return resolve(key)
+          }
+        }
+        return resolve('libx264')
       }),
     )
+    console.log(`Info: using ${codec}`)
+    if(codec === "h264_qsv") {
+      command.addOption('-preset', 'slow')
+    } else {
+      command.addOption('-preset', 'fast')
+      command.addOption('-crf', '26')
+    }
     command.videoCodec(codec)
     command.audioCodec('aac')
     command.audioBitrate('256k')
+    command.outputFPS(30)
+    command.addOption('-look_ahead', '1')
+    command.addOption('-global_quality', '36')
+    //command.addOption('-crf', '23')
+    command.addOption('-profile:v', 'main')
+    //command.addOption('-rc-lookahead:v', '32')
+    //command.addOption('-pix_fmt', 'yuv420p')
     command
       .addOption('-hls_time', 5)
       // include all the segments in the list
