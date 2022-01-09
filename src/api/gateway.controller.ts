@@ -114,20 +114,28 @@ export class GatewayApiController {
   /**
    * Pushes a new job onto the queue
    */
-  @Get('/pushJob/:url')
-  async pushJob(@Param('url') url) {
-    const data = await unwrapJWS({
-      payload: 'eyJoZWxsbyI6IndvcmxkIn0',
-      signatures: [
-        {
-          protected:
-            'eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa3NMdDFEdXZaeEN2cEM2YlA0YnlVR2FTNUxBTjNHclNHVjFDendveGRuNG55I3o2TWtzTHQxRHV2WnhDdnBDNmJQNGJ5VUdhUzVMQU4zR3JTR1YxQ3p3b3hkbjRueSJ9',
-          signature:
-            'L9xZKKeBZZcvjzVXhqAtzrKOmmmPbSGty9P-wbTM8Rf8gyssRCVozqlOJM9-8sKkXRxp6k2uVhMMmCsPuD29CA',
-        },
-      ],
+  @Post('/pushJob')
+  async pushJob(@Body() body) {
+    const {did, payload} = await unwrapJWS(body.jws)
+    const controllers = encoderContainer.self.config.get('admin.controllers')
+
+    if(controllers.includes(did)) {
+      return await encoderContainer.self.gateway.createJob(payload.url)
+    } else {
+      throw new Error('Unauthorized')
+    }
+  }
+
+  @Get('/sync')
+  async syncFile(@Param('job_id') job_id) {
+
+    console.log(job_id)
+  }
+
+  @Get('jobstatus/:job_id')
+  async jobStatus(@Param('job_id') job_id) {
+    return await encoderContainer.self.gateway.jobs.findOne({
+      id: job_id
     })
-    console.log(data)
-    return await encoderContainer.self.gateway.createJob(url)
   }
 }

@@ -15,6 +15,8 @@ import { EncodeStatus, GatewayJob, GatewayWorkerInfo, JobStatus } from '../encod
 import NodeSchedule from 'node-schedule'
 import { MongoClient, Db, Collection } from 'mongodb'
 import PQueue from 'p-queue'
+import { Cluster } from '@nftstorage/ipfs-cluster'
+import IpfsCluster from 'ipfs-cluster-api'
 
 export class GatewayService {
   self: CoreService
@@ -23,6 +25,7 @@ export class GatewayService {
   jobs: Collection<GatewayJob>
   clusterNodes: Collection<GatewayWorkerInfo>
   claimQueue: PQueue
+  ipfsCluster: IpfsCluster
 
   constructor(self) {
     this.self = self
@@ -30,6 +33,7 @@ export class GatewayService {
 
     this.askJob = this.askJob.bind(this)
     this.runReassign = this.runReassign.bind(this)
+    this.runUploadingCheck = this.runUploadingCheck.bind(this)
   }
 
   async stats() {
@@ -130,6 +134,9 @@ export class GatewayService {
               } as any,
             },
           })
+
+          ///const out = await this.ipfsCluster.pin.add(payload.output.cid, {})
+          //console.log(out)
         } else {
           throw new Error('Output CID not provided')
         }
@@ -146,7 +153,10 @@ export class GatewayService {
     const data = await this.jobs.findOne({
       id: job_id,
     })
-    if (data.assigned_to === node_id && (data.status === JobStatus.ASSIGNED || data.status === JobStatus.RUNNING)) {
+    if (
+      data.assigned_to === node_id &&
+      (data.status === JobStatus.ASSIGNED || data.status === JobStatus.RUNNING)
+    ) {
       await this.jobs.findOneAndUpdate(
         {
           id: job_id,
@@ -174,7 +184,7 @@ export class GatewayService {
   async nodeJobs() {}
 
   async createJob(url: string) {
-    return await this.jobs.insertOne({
+    const obj = {
       id: uuid(),
       created_at: new Date(),
       status: JobStatus.QUEUED,
@@ -189,22 +199,24 @@ export class GatewayService {
         uri: url,
       },
       result: null,
-    })
+    }
+    await this.jobs.insertOne(obj)
+    return obj
   }
 
   async runReassign() {
     console.log('running ', new Date())
     const expiredJobs = await this.jobs.find({
-        $or: [
-            {
-                status: { $eq: JobStatus.RUNNING },
-                last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 5) },
-            },
-            {
-                status: { $eq: JobStatus.ASSIGNED },
-                last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 5) },
-            }
-        ]
+      $or: [
+        {
+          status: { $eq: JobStatus.RUNNING },
+          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 5) },
+        },
+        {
+          status: { $eq: JobStatus.ASSIGNED },
+          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 5) },
+        },
+      ],
     })
     console.log(`${await expiredJobs.count()} number of jobs has expired`)
     for await (let job of expiredJobs) {
@@ -219,12 +231,45 @@ export class GatewayService {
       })
     }
   }
+  async runUploadingCheck() {
+    const jobs = await this.jobs.find({
+      status: JobStatus.UPLOADING,
+    }).toArray()
+    console.log(jobs)
+    for(let job of jobs) {
+        const cid = (job.result as any).cid;
+        console.log(cid)
+        const pinStatus = await this.ipfsCluster.status(cid)
+        console.log(pinStatus)
+        let uploaded = false;
+        let pinning = false;
+        for(let mapEntry of Object.values(pinStatus.peer_map) as any[]) {
+            if(mapEntry.status === "pinned") {
+                uploaded = true
+            }
+            if(mapEntry.status === "pinning") {
+                pinning = true
+            }
+        }
+        if(uploaded) {
+            await this.jobs.findOneAndUpdate(job, {
+                $set: {
+                    status: JobStatus.COMPLETE
+                }
+            })
+        } else if(!pinning) {
+            await this.ipfsCluster.pin.add(cid)
+        }
+        console.log(`${job.id}: ${uploaded}`)
+    }
+  }
 
   async start() {
     const gatewayEnabled = this.self.config.get('gateway.enabled')
     if (gatewayEnabled) {
       NodeSchedule.scheduleJob('15 * * * * *', this.runReassign)
       NodeSchedule.scheduleJob('45 * * * * *', this.runReassign)
+      NodeSchedule.scheduleJob('45 * * * * *', this.runUploadingCheck)
 
       const mongo = new MongoClient(this.self.config.get('gateway.mongodb_url'))
       await mongo.connect()
@@ -238,6 +283,34 @@ export class GatewayService {
           }),
         ),
       )
+      this.ipfsCluster = new IpfsCluster({
+        host: '',
+        port: '9094',
+        protocol: 'http',
+        headers: {
+          authorization: '',
+        },
+      })
     }
   }
 }
+void (async () => {
+ try {
+     let ipfsCluster = new IpfsCluster({
+       host: '',
+       port: '9094',
+       protocol: 'http',
+       headers: {
+         authorization: '',
+       },
+     })
+     const a = await ipfsCluster.status('QmaCRG6bam6XJiXfVSSPkXAY388GUgv22bvhqkHNHeqL8h')
+     const b = await ipfsCluster.status('QmeeZ8sDCG6krbLQ7h5Su4YXjKA6qVjGW6FeRCc7u5HiCP')
+     console.log(a)
+     console.log(b)
+     console.log(await ipfsCluster.pin.ls())
+     await ipfsCluster.pin.rm('QmaSL1VwhRERhHPnddb19o6K2BhRazVTtDZq1TVuqQA5dd')
+ } catch {
+
+ }
+})()

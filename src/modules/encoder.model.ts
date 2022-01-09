@@ -14,6 +14,7 @@ export enum EncodeStatus {
     RUNNING = 'running',
     FAILED = 'failed',
     UPLOADING = 'uploading',
+    SYNCING = 'syncing',
     COMPLETE = 'complete',
 }
 
@@ -21,6 +22,7 @@ export enum JobStatus {
     QUEUED = "queued",
     ASSIGNED = "assigned",
     RUNNING = "running",
+    UPLOADING = 'uploading',
     COMPLETE = 'complete'
 }
 
@@ -47,6 +49,7 @@ export interface GatewayJob {
     input: InputObj, 
     result: ResultObj | null 
     assigned_to: string | null
+    sync?: Boolean
 }
 
 

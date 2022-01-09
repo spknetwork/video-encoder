@@ -138,14 +138,22 @@ export class Config {
             },
             gateway: {
                 enabled: false,
-                mongodb_url: '' //If conenction fails, the gateway will not run
-            }
+                mongodb_url: '', //If conenction fails, the gateway will not run
+                ipfsCluster: {
+                    url: '',
+                    credentials: ''
+                },
+            },
             /*api: {
                 http: {
                     enabled: true,
                     apiAddr: "/ip4/127.0.0.1/tcp/8001"
                 }
             },*/
+            admin: {
+                //List of admin DIDs
+                controllers: []
+            }
         };
 
 
