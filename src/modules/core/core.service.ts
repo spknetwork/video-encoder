@@ -14,7 +14,7 @@ import { Config } from './config.service'
 import os from 'os'
 import path from 'path'
 import { IdentityService } from './identity.service'
-import { GatewayClient } from './gatewayClient'
+import { GatewayClient } from './gatewayClient.service'
 
 const idxAliases = {
   rootPosts: 'ceramic://kjzl6cwe1jw147fikhkjs9qysmv6dkdsu5i6zbgk4x9p47gt9uedru1755y76dg',

@@ -5,6 +5,7 @@
 import { BadRequestException, Body, HttpCode, HttpStatus, Post, Put, Query } from '@nestjs/common'
 import { Controller, Get, Param } from '@nestjs/common'
 import { EncoderService } from '../modules/core/encoder.service'
+import { JobStatus } from '../modules/encoder.model'
 import { encoderContainer } from './index'
 import { unwrapJWS } from './middleware'
 
@@ -120,7 +121,7 @@ export class GatewayApiController {
     const controllers = encoderContainer.self.config.get('admin.controllers')
 
     if(controllers.includes(did)) {
-      return await encoderContainer.self.gateway.createJob(payload.url)
+      return await encoderContainer.self.gateway.createJob(payload.url, payload.metadata)
     } else {
       throw new Error('Unauthorized')
     }
@@ -134,8 +135,26 @@ export class GatewayApiController {
 
   @Get('jobstatus/:job_id')
   async jobStatus(@Param('job_id') job_id) {
-    return await encoderContainer.self.gateway.jobs.findOne({
-      id: job_id
+    const itemsQueued = await encoderContainer.self.gateway.jobs.find({
+      status: JobStatus.QUEUED
+    }, {
+      sort: {
+        created_at: -1
+      }
+    }).toArray();
+
+    let rank = null;
+    itemsQueued.map((item, index) => {
+      if(item.id === job_id) {
+        rank = index
+      }
     })
+    const job = await encoderContainer.self.gateway.jobs.findOne({
+      id: job_id
+    });
+    return { 
+      job,
+      rank
+    }
   }
 }
