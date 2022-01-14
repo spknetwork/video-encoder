@@ -183,7 +183,7 @@ export class GatewayService {
 
   async nodeJobs() {}
 
-  async createJob(url: string) {
+  async createJob(url: string, metadata) {
     const obj = {
       id: uuid(),
       created_at: new Date(),
@@ -194,7 +194,7 @@ export class GatewayService {
 
       assigned_to: null,
       assigned_date: null,
-
+      metadata: metadata,
       input: {
         uri: url,
       },
