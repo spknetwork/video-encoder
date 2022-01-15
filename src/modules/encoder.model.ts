@@ -50,6 +50,11 @@ export interface GatewayJob {
     result: ResultObj | null 
     assigned_to: string | null
     sync?: Boolean
+    options?: {
+        pin?: Boolean //Enable/disable pinning of final video
+    }
+    storageMetadata?: Object
+    metadata?: Object
 }
 
 
