@@ -121,7 +121,7 @@ export class GatewayApiController {
     const controllers = encoderContainer.self.config.get('admin.controllers')
 
     if(controllers.includes(did)) {
-      return await encoderContainer.self.gateway.createJob(payload.url, payload.metadata)
+      return await encoderContainer.self.gateway.createJob(payload.url, payload.metadata, payload.storageMetadata)
     } else {
       throw new Error('Unauthorized')
     }

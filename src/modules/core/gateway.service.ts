@@ -128,15 +128,15 @@ export class GatewayService {
         if (payload.output.cid) {
           await this.jobs.findOneAndUpdate(jobInfo, {
             $set: {
-              status: JobStatus.COMPLETE,
+              status: JobStatus.UPLOADING,
               result: {
                 cid: payload.output.cid as any,
               } as any,
             },
           })
 
-          ///const out = await this.ipfsCluster.pin.add(payload.output.cid, {})
-          //console.log(out)
+          const out = await this.ipfsCluster.pin.add(payload.output.cid, jobInfo.storageMetadata)
+          console.log(out)
         } else {
           throw new Error('Output CID not provided')
         }
