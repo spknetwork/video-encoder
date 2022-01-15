@@ -22,7 +22,7 @@ export class GatewayService {
   self: CoreService
   events: EventEmitter
   db: Db
-  jobs: Collection<GatewayJob>
+  jobs: Collection
   clusterNodes: Collection<GatewayWorkerInfo>
   claimQueue: PQueue
   ipfsCluster: IpfsCluster
@@ -183,7 +183,7 @@ export class GatewayService {
 
   async nodeJobs() {}
 
-  async createJob(url: string, metadata) {
+  async createJob(url: string, metadata, storageMetadata) {
     const obj = {
       id: uuid(),
       created_at: new Date(),
@@ -195,6 +195,7 @@ export class GatewayService {
       assigned_to: null,
       assigned_date: null,
       metadata: metadata,
+      storageMetadata,
       input: {
         uri: url,
       },
