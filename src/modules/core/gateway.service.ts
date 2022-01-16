@@ -135,7 +135,9 @@ export class GatewayService {
             },
           })
 
-          const out = await this.ipfsCluster.pin.add(payload.output.cid, jobInfo.storageMetadata)
+          const out = await this.ipfsCluster.pin.add(payload.output.cid, {
+            metadata: jobInfo.storageMetadata,
+          })
           console.log(out)
         } else {
           throw new Error('Output CID not provided')
@@ -233,50 +235,55 @@ export class GatewayService {
     }
   }
   async runUploadingCheck() {
-    const jobs = await this.jobs.find({
-      status: JobStatus.UPLOADING,
-    }).toArray()
+    const jobs = await this.jobs
+      .find({
+        status: JobStatus.UPLOADING,
+      })
+      .toArray()
     console.log(jobs)
-    for(let job of jobs) {
-        const cid = (job.result as any).cid;
-        console.log(cid)
-        const pinStatus = await this.ipfsCluster.status(cid)
-        console.log(pinStatus)
-        let uploaded = false;
-        let pinning = false;
-        for(let mapEntry of Object.values(pinStatus.peer_map) as any[]) {
-            if(mapEntry.status === "pinned") {
-                uploaded = true
-            }
-            if(mapEntry.status === "pinning") {
-                pinning = true
-            }
+    for (let job of jobs) {
+      const cid = (job.result as any).cid
+      console.log(cid)
+      const pinStatus = await this.ipfsCluster.status(cid)
+      console.log(pinStatus)
+      let uploaded = false
+      let pinning = false
+      for (let mapEntry of Object.values(pinStatus.peer_map) as any[]) {
+        if (mapEntry.status === 'pinned') {
+          uploaded = true
         }
-        if(uploaded) {
-            await this.jobs.findOneAndUpdate(job, {
-                $set: {
-                    status: JobStatus.COMPLETE
-                }
-            })
-        } else if(!pinning) {
-            await this.ipfsCluster.pin.add(cid)
+        if (mapEntry.status === 'pinning') {
+          pinning = true
         }
-        console.log(`${job.id}: ${uploaded}`)
+      }
+      if (uploaded) {
+        await this.jobs.findOneAndUpdate(job, {
+          $set: {
+            status: JobStatus.COMPLETE,
+          },
+        })
+      } else if (!pinning) {
+        await this.ipfsCluster.pin.add(cid, {
+          metadata: job.storageMetadata,
+        })
+      }
+      console.log(`${job.id}: ${uploaded}`)
     }
   }
 
   async start() {
     const gatewayEnabled = this.self.config.get('gateway.enabled')
     if (gatewayEnabled) {
-      NodeSchedule.scheduleJob('15 * * * * *', this.runReassign)
-      NodeSchedule.scheduleJob('45 * * * * *', this.runReassign)
-      NodeSchedule.scheduleJob('45 * * * * *', this.runUploadingCheck)
-
       const mongo = new MongoClient(this.self.config.get('gateway.mongodb_url'))
       await mongo.connect()
       this.db = mongo.db('spk-encoder-gateway')
       this.jobs = this.db.collection('jobs')
       this.clusterNodes = this.db.collection('cluster_nodes')
+
+      NodeSchedule.scheduleJob('15 * * * * *', this.runReassign)
+      NodeSchedule.scheduleJob('45 * * * * *', this.runReassign)
+      NodeSchedule.scheduleJob('45 * * * * *', this.runUploadingCheck)
+
       console.log(
         JSON.stringify(
           await this.self.identityService.identity.createJWS({
