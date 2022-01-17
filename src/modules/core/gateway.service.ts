@@ -137,6 +137,8 @@ export class GatewayService {
 
           const out = await this.ipfsCluster.pin.add(payload.output.cid, {
             metadata: jobInfo.storageMetadata,
+            replicationFactorMin: 2,
+            replicationFactorMax: 3
           })
           console.log(out)
         } else {
@@ -265,6 +267,8 @@ export class GatewayService {
       } else if (!pinning) {
         await this.ipfsCluster.pin.add(cid, {
           metadata: job.storageMetadata,
+          replicationFactorMin: 2,
+          replicationFactorMax: 3
         })
       }
       console.log(`${job.id}: ${uploaded}`)
