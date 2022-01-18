@@ -15,8 +15,9 @@ import { EncodeStatus, GatewayJob, GatewayWorkerInfo, JobStatus } from '../encod
 import NodeSchedule from 'node-schedule'
 import { MongoClient, Db, Collection } from 'mongodb'
 import PQueue from 'p-queue'
-import { Cluster } from '@nftstorage/ipfs-cluster'
+//import { Cluster } from '@nftstorage/ipfs-cluster'
 import IpfsCluster from 'ipfs-cluster-api'
+import { IpfsClusterPinAdd } from '../../common/utils'
 
 export class GatewayService {
   self: CoreService
@@ -135,7 +136,7 @@ export class GatewayService {
             },
           })
 
-          const out = await this.ipfsCluster.pin.add(payload.output.cid, {
+          const out = await IpfsClusterPinAdd(payload.output.cid, {
             metadata: jobInfo.storageMetadata,
             replicationFactorMin: 2,
             replicationFactorMax: 3
@@ -265,7 +266,7 @@ export class GatewayService {
           },
         })
       } else if (!pinning) {
-        await this.ipfsCluster.pin.add(cid, {
+        await IpfsClusterPinAdd(cid, {
           metadata: job.storageMetadata,
           replicationFactorMin: 2,
           replicationFactorMax: 3

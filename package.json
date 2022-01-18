@@ -19,6 +19,7 @@
     "@web-std/file": "^3.0.0",
     "3id-did-provider": "^1.1.1",
     "ajv": "^8.6.3",
+    "axios": "^0.24.0",
     "cli-ux": "^5.6.3",
     "datastore-fs": "^6.0.1",
     "debug": "^4.3.2",
