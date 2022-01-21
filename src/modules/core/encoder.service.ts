@@ -181,6 +181,8 @@ export class EncoderService {
     console.log(`Info: using ${codec}`)
     if(codec === "h264_qsv") {
       command.addOption('-preset', 'slow')
+      command.addOption('-look_ahead', '1')
+      command.addOption('-global_quality', '36')
     } else {
       command.addOption('-preset', 'fast')
       command.addOption('-crf', '26')
@@ -189,8 +191,6 @@ export class EncoderService {
     command.audioCodec('aac')
     command.audioBitrate('256k')
     command.outputFPS(30)
-    command.addOption('-look_ahead', '1')
-    command.addOption('-global_quality', '36')
     //command.addOption('-crf', '23')
     command.addOption('-profile:v', 'main')
     //command.addOption('-rc-lookahead:v', '32')
