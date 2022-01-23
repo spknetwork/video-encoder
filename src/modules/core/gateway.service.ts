@@ -79,7 +79,7 @@ export class GatewayService {
       },
       {
         sort: {
-          created_at: -1,
+          created_at: 1,
         },
       },
     )
