@@ -59,14 +59,12 @@ export interface GatewayJob {
 
 
 export interface GatewayWorkerInfo {
-    node_id: string, //DID of node
+    id: string, //DID of node
     peer_id: string | null, //libp2p peerID
     last_seen: Date,
     first_seen: Date,
     cryptoAccounts: {
         hive: string | Date
     },
-    nodeInfo: {
-        name: string | null
-    }
+    name: string | null
 }

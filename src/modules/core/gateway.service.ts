@@ -70,7 +70,29 @@ export class GatewayService {
     }
   }
 
-  async updateNode(nodeInfo) {}
+  async updateNode(peer_did, nodeInfo) {
+    const data = await this.clusterNodes.findOne({
+      id: peer_did
+    })
+    if(!data) {
+      await this.clusterNodes.insertOne({
+        id: peer_did,
+        peer_id: nodeInfo.peer_id,
+        name: nodeInfo.name,
+        last_seen: new Date(),
+        first_seen: new Date()
+      } as any)
+    } else {
+      await this.clusterNodes.findOneAndUpdate(data, {
+        $set: {
+          cryptoAccounts: nodeInfo.cryptoAccounts,
+          peer_id: nodeInfo.peer_id,
+          name: nodeInfo.name,
+          last_seen: new Date(),
+        }
+      } as any)
+    }
+  }
 
   async askJob() {
     return await this.jobs.findOne(
@@ -124,9 +146,11 @@ export class GatewayService {
       id: payload.job_id,
     })
     console.log(payload)
+    console.log('received finish job from ' + did)
     if (jobInfo.assigned_to === did) {
       if (payload.output) {
         if (payload.output.cid) {
+          console.log('accepted finish job from ' + did)
           await this.jobs.findOneAndUpdate(jobInfo, {
             $set: {
               status: JobStatus.UPLOADING,

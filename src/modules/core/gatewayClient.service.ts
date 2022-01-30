@@ -95,14 +95,22 @@ export class GatewayClient {
 
       this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
 
-      try {
-        await Axios.post(`${this.apiUrl}/api/v0/gateway/updateNode`, {
-          jws: await this.self.identityService.identity.createJWS({
-            name: this.self.config.get('node.name'),
-            cryptoAccounts: this.self.config.get('node.cryptoAccounts'),
-          }),
-        })
-      } catch {}
+
+      setTimeout(async() => {
+        try {
+          await Axios.post(`${this.apiUrl}/api/v0/gateway/updateNode`, {
+            jws: await this.self.identityService.identity.createJWS({
+              node_info: {
+                name: this.self.config.get('node.name'),
+                cryptoAccounts: this.self.config.get('node.cryptoAccounts'),
+                peer_id: await (await this.self.ipfs.id()).id
+              }
+            }),
+          })
+        } catch (ex) {
+          console.log(ex)
+        }
+      }, 1000)
     }
   }
 }
