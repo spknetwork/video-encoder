@@ -346,6 +346,9 @@ export class GatewayService {
       })
     }
   }
+  async stop() {
+
+  }
 }
 void (async () => {
  try {
