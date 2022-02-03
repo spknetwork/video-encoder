@@ -9,6 +9,7 @@ export class GatewayClient {
   self: CoreService
   apiUrl: string
   jobQueue: PQueue
+  activeJobs: Record<string, Object>
 
   constructor(self) {
     this.self = self
@@ -16,6 +17,8 @@ export class GatewayClient {
     this.getNewJobs = this.getNewJobs.bind(this)
 
     this.jobQueue = new PQueue({ concurrency: 1 })
+
+    this.activeJobs = {}
   }
 
   async queueJob(jobInfo) {
@@ -29,6 +32,7 @@ export class GatewayClient {
       })
       const job_id = jobInfo.id
       console.log(data)
+      this.activeJobs[job_id] = jobInfo;
 
       const job = await this.self.encoder.createJob(jobInfo.input.uri)
       console.log(job)
@@ -61,13 +65,14 @@ export class GatewayClient {
                   },
                 }),
               })
+              delete this.activeJobs[job_id];
             }
           }
         }
         this.self.encoder.events.on('job.status_update', eventListenr)
         
-        await this.self.encoder.executeJob(job.streamId)
         
+        await this.self.encoder.executeJob(job.streamId)
 
         
         //this.self.encoder.events.off('job.status_update', eventListenr)
@@ -86,6 +91,14 @@ export class GatewayClient {
     if (data && this.jobQueue.size === 0) {
       this.queueJob(data)
     }
+  }
+
+  async rejectJob(job_id) {
+    await Axios.post(`${this.apiUrl}/api/v0/gateway/rejectJob`, {
+      jws: await this.self.identityService.identity.createDagJWS({
+        job_id
+      })
+    })
   }
 
   async start() {
@@ -111,6 +124,13 @@ export class GatewayClient {
           console.log(ex)
         }
       }, 1000)
+    }
+  }
+  async stop() {
+    NodeSchedule.gracefulShutdown();
+    for (let job_id of Object.keys(this.activeJobs)) {
+      console.log('Cancelling all jobs')
+      await this.rejectJob(job_id)
     }
   }
 }

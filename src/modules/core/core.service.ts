@@ -59,4 +59,11 @@ export class CoreService {
     this.gatewayClient = new GatewayClient(this)
     await this.gatewayClient.start()
   }
+
+  async stop() {
+
+
+    await this.gatewayClient.stop()
+    await this.gateway.stop()
+  }
 }

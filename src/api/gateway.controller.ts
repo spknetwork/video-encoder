@@ -79,8 +79,9 @@ export class GatewayApiController {
    */
   @Post('/rejectJob')
   async rejectJob(@Body() body) {
-    const {payload, did} = await unwrapJWS(body)
+    const {payload, did} = await unwrapJWS(body.jws)
 
+    await encoderContainer.self.gateway.rejectJob(payload.job_id, did)
   }
 
   @Post('/rejectAll')

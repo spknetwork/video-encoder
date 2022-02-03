@@ -139,7 +139,23 @@ export class GatewayService {
 
   async cancelJob(job_id) {}
 
-  async rejectJob(job_id, node_id) {}
+  async rejectJob(job_id, node_id) {
+    const jobInfo = await this.jobs.findOne({
+      id: job_id
+    })
+    if(jobInfo.assigned_to === node_id) {
+      await this.jobs.findOneAndUpdate({
+        id: job_id
+      }, {
+        $set: {
+          status: JobStatus.QUEUED,
+          assigned_date: null,
+          assigned_to: null,
+          last_pinged: null
+        }
+      })
+    }
+  }
 
   async finishJob(payload, did) {
     const jobInfo = await this.jobs.findOne({
