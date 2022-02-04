@@ -24,6 +24,7 @@ export class GatewayClient {
   async queueJob(jobInfo) {
     console.log(jobInfo)
     try {
+      //Asks gateway to accept the job
       const { data } = await Axios.post(`${this.apiUrl}/api/v0/gateway/acceptJob`, {
         jws: await this.self.identityService.identity.createJWS({
           action: 'accept',
@@ -32,12 +33,18 @@ export class GatewayClient {
       })
       const job_id = jobInfo.id
       console.log(data)
+
+      //Notes the job so it can be removed if neede when the daemon stops/restart
       this.activeJobs[job_id] = jobInfo;
 
-      const job = await this.self.encoder.createJob(jobInfo.input.uri)
+      const job = await this.self.encoder.createJob(jobInfo.input.uri); //Creates an internal job
       console.log(job)
+
+      //Adds job to the queue.
       this.jobQueue.add(async () => {
-        setInterval(async () => {
+
+        //Ping interval
+        const pid = setInterval(async () => {
           const job_data = await this.self.encoder.pouch.get(job.id)
           await Axios.post(`${this.apiUrl}/api/v0/gateway/pingJob`, {
             jws: await this.self.identityService.identity.createJWS({
@@ -46,6 +53,7 @@ export class GatewayClient {
             }),
           })
         }, 5000)
+
         const eventListenr = async (jobUpdate) => {
           console.log(jobUpdate)
           console.log(jobUpdate.streamId.toString(), job.streamId)
@@ -66,16 +74,24 @@ export class GatewayClient {
                 }),
               })
               delete this.activeJobs[job_id];
+              clearInterval(pid)
+              this.self.encoder.events.off('job.status_update', eventListenr)
             }
           }
         }
+
         this.self.encoder.events.on('job.status_update', eventListenr)
         
         
-        await this.self.encoder.executeJob(job.streamId)
+        try {
+          await this.self.encoder.executeJob(job.streamId)
+        } catch(ex) {
+          console.log('failing job ' + job.id)
+          await this.failJob(job.id)
+          console.log(ex)
+        }
 
         
-        //this.self.encoder.events.off('job.status_update', eventListenr)
       })
     } catch (ex) {
       console.log(ex)
@@ -95,7 +111,15 @@ export class GatewayClient {
 
   async rejectJob(job_id) {
     await Axios.post(`${this.apiUrl}/api/v0/gateway/rejectJob`, {
-      jws: await this.self.identityService.identity.createDagJWS({
+      jws: await this.self.identityService.identity.createJWS({
+        job_id
+      })
+    })
+  }
+
+  async failJob(job_id) {
+    await Axios.post(`${this.apiUrl}/api/v0/gateway/failJob`, {
+      jws: await this.self.identityService.identity.createJWS({
         job_id
       })
     })
@@ -128,9 +152,14 @@ export class GatewayClient {
   }
   async stop() {
     NodeSchedule.gracefulShutdown();
+    console.log(Object.keys(this.activeJobs))
     for (let job_id of Object.keys(this.activeJobs)) {
       console.log('Cancelling all jobs')
-      await this.rejectJob(job_id)
+      try {
+        await this.rejectJob(job_id)
+      } catch (ex) {
+        console.log(ex)
+      }
     }
   }
 }

@@ -140,20 +140,60 @@ export class GatewayService {
   async cancelJob(job_id) {}
 
   async rejectJob(job_id, node_id) {
+    console.log('job rejecting', job_id, node_id)
     const jobInfo = await this.jobs.findOne({
       id: job_id
     })
-    if(jobInfo.assigned_to === node_id) {
-      await this.jobs.findOneAndUpdate({
-        id: job_id
-      }, {
-        $set: {
-          status: JobStatus.QUEUED,
-          assigned_date: null,
-          assigned_to: null,
-          last_pinged: null
-        }
-      })
+    if(!jobInfo) {
+      return;
+    }
+
+    if(jobInfo.status === JobStatus.ASSIGNED || jobInfo.status === JobStatus.RUNNING) {
+      if(jobInfo.assigned_to === node_id) {
+        await this.jobs.findOneAndUpdate({
+          id: job_id
+        }, {
+          $set: {
+            status: JobStatus.QUEUED,
+            assigned_date: null,
+            assigned_to: null,
+            last_pinged: null
+          }
+        })
+      }
+    }
+  }
+
+  async getNodeInfo(node_id: string) {
+    const clusterNode = await this.clusterNodes.findOne({
+      id: node_id
+    })
+
+    return clusterNode
+  }
+
+  //For now fail job and reject job do the same thing. In the future fails will be accounted for and videos with X number of fails will be removed.
+  //Plus potentially applying a score to the encoder..
+  async failJob(job_id, node_id) {
+    const jobInfo = await this.jobs.findOne({
+      id: job_id
+    })
+    if(!jobInfo) {
+      return;
+    }
+    if(jobInfo.status === JobStatus.ASSIGNED || jobInfo.status === JobStatus.RUNNING) { 
+      if(jobInfo.assigned_to === node_id) {
+        await this.jobs.findOneAndUpdate({
+          id: job_id
+        }, {
+          $set: {
+            status: JobStatus.QUEUED,
+            assigned_date: null,
+            assigned_to: null,
+            last_pinged: null
+          }
+        })
+      }
     }
   }
 

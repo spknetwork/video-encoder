@@ -23,11 +23,13 @@ export class GatewayApiController {
     encoderContainer.self.gateway.updateNode(did, payload.node_info)
   }
 
-  @Get('/getnode/:node_id')
+  @Get('/nodeinfo/:node_id')
   async getNode(@Param('node_id') node_id) {
-    return await encoderContainer.self.gateway.clusterNodes.findOne({
-      id: node_id
-    })
+    return {
+      node_info: await encoderContainer.self.gateway.clusterNodes.findOne({
+        id: node_id
+      })
+    }
   }
   /**
    * Get the total number of queued, assigned, running, complete and failed jobs
@@ -79,6 +81,14 @@ export class GatewayApiController {
    */
   @Post('/rejectJob')
   async rejectJob(@Body() body) {
+    const {payload, did} = await unwrapJWS(body.jws)
+
+    await encoderContainer.self.gateway.rejectJob(payload.job_id, did)
+  }
+
+  @Post('/failJob')
+  async failJob(@Body() body) {
+    console.log(body)
     const {payload, did} = await unwrapJWS(body.jws)
 
     await encoderContainer.self.gateway.rejectJob(payload.job_id, did)
