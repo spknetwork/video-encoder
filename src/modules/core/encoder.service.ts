@@ -13,6 +13,7 @@ import PouchdbFind from 'pouchdb-find'
 import PouchdbUpsert from 'pouchdb-upsert'
 import { EncodeStatus } from '../encoder.model'
 import URL from 'url'
+import Downloader from 'nodejs-file-downloader'
 PouchDB.plugin(PouchdbFind)
 PouchDB.plugin(PouchdbUpsert)
 
@@ -159,7 +160,29 @@ export class EncoderService {
     } else {
       sourceUrl = jobInfo.input.url
     }
-    var command = ffmpeg(sourceUrl)
+
+    const downloader = new Downloader({
+      url: sourceUrl,
+      directory: downloadFolder,
+      fileName: "src.mp4",
+      maxAttempts: 6, //Default is 1.
+      onError: function (error) {
+        //You can also hook into each failed attempt.
+        console.log("Error from attempt ", error);
+      },
+    });
+    
+    try {
+      await downloader.download();
+    } catch (error) {
+      //If all attempts fail, the last error is thrown.
+      console.log("Final fail", error);
+      throw error;
+    }
+    let srcVideo = Path.join(downloadFolder, "src.mp4");
+    console.log(`Downloaded to `, srcVideo)
+
+    var command = ffmpeg(srcVideo)
 
     var codec = await new Promise((resolve, reject) =>
       ffmpeg.getAvailableEncoders(async (e, enc) => {
