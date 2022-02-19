@@ -151,6 +151,7 @@ export class EncoderService {
   }
   async executeJobRaw(jobInfo, streamId) {
     const workfolder = tmp.dirSync().name
+    const downloadFolder = tmp.dirSync().name
 
     const parsedUrl = URL.parse(jobInfo.input.url)
 
