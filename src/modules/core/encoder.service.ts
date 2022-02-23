@@ -217,6 +217,7 @@ export class EncoderService {
     command.outputFPS(30)
     //command.addOption('-crf', '23')
     command.addOption('-profile:v', 'main')
+    command.addOption('-max_muxing_queue_size', '1024')
     //command.addOption('-rc-lookahead:v', '32')
     //command.addOption('-pix_fmt', 'yuv420p')
     command
