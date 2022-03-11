@@ -363,7 +363,7 @@ export class EncoderService {
     let resolutionLine = (size) => {
       return `#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=${tutils.getBandwidth(
         tutils.getHeight(size),
-      )},CODECS="avc1.4d001f,mp4a.40.2",RESOLUTION=${tutils.calculateWidth(
+      )},RESOLUTION=${tutils.calculateWidth(
         codecData,
         tutils.getHeight(size),
       )},NAME=${tutils.getHeight(size)}\n`
