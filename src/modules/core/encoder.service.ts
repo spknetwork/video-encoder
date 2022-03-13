@@ -396,15 +396,15 @@ export class EncoderService {
         profiles: [
           {
             name: '1080p',
-            size: '1920x1080',
+            size: '?x1080',
           },
           {
             name: '720p',
-            size: '1080x720',
+            size: '?x720',
           },
           {
             name: '480p',
-            size: '720x480',
+            size: '?x480',
           },
         ],
         output: [],
