@@ -270,7 +270,11 @@ export class EncoderService {
 
       var promy = new Promise((resolve, reject) => {
         ret
-          .on('end', () => {
+          .on('end', (stdout, stderr) => {
+            console.log(stderr)
+            if(stderr.includes('Invalid data found when processing input')) {
+              return reject('Invalid data found when processing input')
+            }
             resolve(null)
           })
           .on('error', (err) => {
