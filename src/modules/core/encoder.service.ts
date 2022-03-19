@@ -43,11 +43,11 @@ interface EncodeInput {
 }
 
 const MAX_BIT_RATE = {
-  '1080': '2760k',
-  '720': '1327k',
-  '480': '763k',
-  '360': '423k',
-  '240': '155k',
+  '1080': '2000000', //2000kb/s
+  '720': '1327' + '000',
+  '480': '763' + '000',
+  '360': '423' + '000',
+  '240': '155' + '000',
   '144': '640k',
 }
 const tutils = {
@@ -363,11 +363,11 @@ export class EncoderService {
    */
   _generateManifest(codecData, sizes) {
     let master = '#EXTM3U\n'
-    master += '#EXT-X-VERSION:6\n'
+    master += '#EXT-X-VERSION:3\n'
     let resolutionLine = (size) => {
-      return `#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=${tutils.getBandwidth(
+      return `#EXT-X-STREAM-INF:BANDWIDTH=${tutils.getBandwidth(
         tutils.getHeight(size),
-      )},RESOLUTION=${tutils.calculateWidth(
+      )},CODECS="mp4a.40.2",RESOLUTION=${tutils.calculateWidth(
         codecData,
         tutils.getHeight(size),
       )},NAME=${tutils.getHeight(size)}\n`
