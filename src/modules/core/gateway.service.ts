@@ -18,6 +18,7 @@ import PQueue from 'p-queue'
 //import { Cluster } from '@nftstorage/ipfs-cluster'
 import IpfsCluster from 'ipfs-cluster-api'
 import { IpfsClusterPinAdd } from '../../common/utils'
+import { ActivityService } from './oplog.service'
 
 export class GatewayService {
   self: CoreService
@@ -27,6 +28,7 @@ export class GatewayService {
   clusterNodes: Collection<GatewayWorkerInfo>
   claimQueue: PQueue
   ipfsCluster: IpfsCluster
+  activity: ActivityService
 
   constructor(self) {
     this.self = self
@@ -118,6 +120,11 @@ export class GatewayService {
       throw new Error(`${job_id} does not exist`)
     }
     if (jobInfo.status === JobStatus.QUEUED) {
+      await this.activity.changeState({
+        job_id: job_id,
+        new_status: JobStatus.ASSIGNED,
+        assigned_to: node_id,
+      })
       await this.jobs.findOneAndUpdate(
         {
           id: job_id,
@@ -150,6 +157,14 @@ export class GatewayService {
 
     if(jobInfo.status === JobStatus.ASSIGNED || jobInfo.status === JobStatus.RUNNING) {
       if(jobInfo.assigned_to === node_id) {
+        await this.activity.changeState({
+          job_id: job_id,
+          new_status: JobStatus.QUEUED,
+          assigned_to: null,
+          meta: {
+            reason: 'rejected'
+          }
+        })
         await this.jobs.findOneAndUpdate({
           id: job_id
         }, {
@@ -183,6 +198,14 @@ export class GatewayService {
     }
     if(jobInfo.status === JobStatus.ASSIGNED || jobInfo.status === JobStatus.RUNNING) { 
       if(jobInfo.assigned_to === node_id) {
+        await this.activity.changeState({
+          job_id: job_id,
+          new_status: JobStatus.QUEUED,
+          assigned_to: null,
+          meta: {
+            reason: 'failed'
+          }
+        })
         await this.jobs.findOneAndUpdate({
           id: job_id
         }, {
@@ -207,6 +230,11 @@ export class GatewayService {
       if (payload.output) {
         if (payload.output.cid) {
           console.log('accepted finish job from ' + did)
+          await this.activity.changeState({
+            job_id: payload.job_id,
+            new_status: JobStatus.UPLOADING,
+            assigned_to: did
+          })
           await this.jobs.findOneAndUpdate(jobInfo, {
             $set: {
               status: JobStatus.UPLOADING,
@@ -242,6 +270,13 @@ export class GatewayService {
       data.assigned_to === node_id &&
       (data.status === JobStatus.ASSIGNED || data.status === JobStatus.RUNNING)
     ) {
+      if(payload.progressPct > 1 && data.status !== JobStatus.RUNNING) {
+        await this.activity.changeState({
+          job_id,
+          assigned_to: node_id,
+          new_status: JobStatus.RUNNING
+        })
+      }
       await this.jobs.findOneAndUpdate(
         {
           id: job_id,
@@ -307,6 +342,14 @@ export class GatewayService {
     console.log(`${await expiredJobs.count()} number of jobs has expired`)
     for await (let job of expiredJobs) {
       console.log(`Re-assigning ${job.id} from ${job.assigned_to}`)
+      await this.activity.changeState({
+        job_id: job.job_id,
+        new_status: JobStatus.QUEUED,
+        assigned_to: job.assigned_to,
+        meta: {
+          reason: 'reassigned'
+        }
+      })
       await this.jobs.findOneAndUpdate(job, {
         $set: {
           status: JobStatus.QUEUED,
@@ -340,6 +383,11 @@ export class GatewayService {
         }
       }
       if (uploaded) {
+        await this.activity.changeState({
+          job_id: job.job_id,
+          new_status: JobStatus.COMPLETE,
+          assigned_to: job.assigned_to
+        })
         await this.jobs.findOneAndUpdate(job, {
           $set: {
             status: JobStatus.COMPLETE,
@@ -364,6 +412,7 @@ export class GatewayService {
       this.db = mongo.db('spk-encoder-gateway')
       this.jobs = this.db.collection('jobs')
       this.clusterNodes = this.db.collection('cluster_nodes')
+      this.activity = new ActivityService(this.self)
 
       NodeSchedule.scheduleJob('15 * * * * *', this.runReassign)
       NodeSchedule.scheduleJob('45 * * * * *', this.runReassign)
