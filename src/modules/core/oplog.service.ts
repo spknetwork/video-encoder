@@ -40,7 +40,12 @@ export class ActivityService {
             }
         })
 
-        const duration = date.getTime() - action.date.getTime()
+        let duration
+        if(action) {
+            duration = date.getTime() - action.date.getTime()
+        } else {
+            duration = null
+        }
 
         const new_op = {
             job_id: args.job_id,
