@@ -41,7 +41,7 @@ export class ActivityService {
         })
 
         const jobInfo = await this.self.gateway.jobs.findOne({
-            job_id: args.job_id
+            id: args.job_id
         })
 
         let duration
