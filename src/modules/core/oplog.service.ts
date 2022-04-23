@@ -63,7 +63,7 @@ export class ActivityService {
             previous_status,
             status: args.new_status,
 
-            duration,
+            duration: duration / 1000,
             date,
 
             state: args.state,
