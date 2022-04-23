@@ -40,16 +40,27 @@ export class ActivityService {
             }
         })
 
+        const jobInfo = await this.self.gateway.jobs.findOne({
+            job_id: args.job_id
+        })
+
         let duration
         if(action) {
             duration = date.getTime() - action.date.getTime()
         } else {
-            duration = null
+            duration = date.getTime() - jobInfo.created_at.getTime()
         }
 
+        let previous_status;
+        if(action) {
+            previous_status = action.status
+        } else {
+            previous_status = jobInfo.status
+        }
+        
         const new_op = {
             job_id: args.job_id,
-            previous_status: action.status,
+            previous_status,
             status: args.new_status,
 
             duration,
