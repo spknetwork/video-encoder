@@ -384,7 +384,7 @@ export class GatewayService {
       }
       if (uploaded) {
         await this.activity.changeState({
-          job_id: job.job_id,
+          job_id: job.id,
           new_status: JobStatus.COMPLETE,
           assigned_to: job.assigned_to
         })
