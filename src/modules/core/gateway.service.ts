@@ -343,7 +343,7 @@ export class GatewayService {
     for await (let job of expiredJobs) {
       console.log(`Re-assigning ${job.id} from ${job.assigned_to}`)
       await this.activity.changeState({
-        job_id: job.job_id,
+        job_id: job.id,
         new_status: JobStatus.QUEUED,
         assigned_to: job.assigned_to,
         meta: {
