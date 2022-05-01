@@ -4,6 +4,8 @@ import NodeSchedule from 'node-schedule'
 import PQueue from 'p-queue'
 import { TileDocument } from '@ceramicnetwork/stream-tile'
 import { EncodeStatus, JobStatus } from '../encoder.model'
+import GitCommitInfo from 'git-commit-info'
+
 
 export class GatewayClient {
   self: CoreService
@@ -40,11 +42,12 @@ export class GatewayClient {
       const job = await this.self.encoder.createJob(jobInfo.input.uri); //Creates an internal job
       console.log(job)
 
+      let pid;
       //Adds job to the queue.
       this.jobQueue.add(async () => {
 
         //Ping interval
-        const pid = setInterval(async () => {
+        pid = setInterval(async () => {
           const job_data = await this.self.encoder.pouch.get(job.id)
           await Axios.post(`${this.apiUrl}/api/v0/gateway/pingJob`, {
             jws: await this.self.identityService.identity.createJWS({
@@ -79,8 +82,18 @@ export class GatewayClient {
             }
           }
         }
+        
+        const downloadListener = async (percentage, job_id) => {
+          await Axios.post(`${this.apiUrl}/api/v0/gateway/pingJob`, {
+            jws: await this.self.identityService.identity.createJWS({
+              job_id,
+              download_pct: percentage,
+            }),
+          })
+        }
 
         this.self.encoder.events.on('job.status_update', eventListenr)
+        this.self.encoder.events.on('job.download_update', downloadListener)
         
         
         try {
@@ -88,6 +101,7 @@ export class GatewayClient {
         } catch(ex) {
           console.log('failing job ' + job.id)
           await this.failJob(job.id)
+          clearInterval(pid)
           console.log(ex)
         }
 
@@ -140,7 +154,8 @@ export class GatewayClient {
               node_info: {
                 name: this.self.config.get('node.name'),
                 cryptoAccounts: this.self.config.get('node.cryptoAccounts'),
-                peer_id: await (await this.self.ipfs.id()).id
+                peer_id: await (await this.self.ipfs.id()).id,
+                commit_hash: GitCommitInfo().hash
               }
             }),
           })
