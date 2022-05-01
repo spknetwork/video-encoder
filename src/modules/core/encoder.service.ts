@@ -135,19 +135,23 @@ export class EncoderService {
   }
 
   async updateJob(streamId, updateData) {
-    const tileDoc = await TileDocument.load(this.self.ceramic, streamId)
-    const content = tileDoc.content
-    console.log(streamId)
-    console.log(content)
-    for (let [key, value] of Object.entries(updateData)) {
-      content[key] = value
+    try {
+      const tileDoc = await TileDocument.load(this.self.ceramic, streamId)
+      const content = tileDoc.content
+      console.log(streamId)
+      console.log(content)
+      for (let [key, value] of Object.entries(updateData)) {
+        content[key] = value
+      }
+      content['updated_at'] = new Date().toISOString()
+      await tileDoc.update(content)
+      this.events.emit('job.status_update', {
+        content,
+        streamId,
+      })
+    } catch (ex) {
+      console.log(ex)
     }
-    content['updated_at'] = new Date().toISOString()
-    await tileDoc.update(content)
-    this.events.emit('job.status_update', {
-      content,
-      streamId,
-    })
   }
   async executeJobRaw(jobInfo, streamId) {
     const workfolder = tmp.dirSync().name
@@ -165,22 +169,27 @@ export class EncoderService {
     const downloader = new Downloader({
       url: sourceUrl,
       directory: downloadFolder,
-      fileName: "src.mp4",
+      fileName: `${jobInfo.job_id}_src.mp4`,
       maxAttempts: 6, //Default is 1.
       onError: function (error) {
         //You can also hook into each failed attempt.
         console.log("Error from attempt ", error);
       },
+      onProgress: function (percentage, chunk, remainingSize) {
+        //Gets called with each chunk.
+        this.events.emit('job.download_update', percentage, jobInfo.job_id)
+      },
     });
     
+    let srcVideo = Path.join(downloadFolder, `${jobInfo.job_id}_src.mp4`);
     try {
       await downloader.download();
     } catch (error) {
       //If all attempts fail, the last error is thrown.
       console.log("Final fail", error);
+      fs.unlinkSync(downloadFolder)
       throw error;
     }
-    let srcVideo = Path.join(downloadFolder, "src.mp4");
     console.log(`Downloaded to `, srcVideo)
 
     var command = ffmpeg(srcVideo)
@@ -319,7 +328,10 @@ export class EncoderService {
         pin: false,
         wrapWithDirectory: true,
       })
-      fs.unlink(workfolder, () => {})
+      
+      fs.unlinkSync(workfolder)
+      fs.unlinkSync(downloadFolder)
+      console.log('ERROR ', workfolder)
 
       this.updateJob(streamId, {
         status: EncodeStatus.COMPLETE,
@@ -328,10 +340,13 @@ export class EncoderService {
       })
       return ipfsHash.cid.toString()
     } catch (ex) {
+      console.log(ex)
       this.updateJob(streamId, {
         status: EncodeStatus.FAILED,
       })
-      fs.unlink(workfolder, () => {})
+      console.log('ERROR ', workfolder)
+      fs.unlinkSync(workfolder)
+      fs.unlinkSync(downloadFolder)
     }
   }
   async executeJob(jobInfoOrId: Object | string) {
