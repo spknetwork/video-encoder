@@ -1,6 +1,12 @@
 # SPK Video Encoder 
 
+### Requirements
 
+The spk network video encoder requires the following for operation
+* Ipfs cluster instance (for gateway)
+* go-ipfs instance
+* NodeJS
+* Ffmpeg 
 
 ### Install & Usage
 
