@@ -332,8 +332,8 @@ export class EncoderService {
         wrapWithDirectory: true,
       })
       
-      fs.unlinkSync(workfolder)
-      fs.unlinkSync(downloadFolder)
+      fs.rmSync(workfolder, {recursive: true, force: true})
+      fs.rmSync(downloadFolder, {recursive: true, force: true})
       console.log('ERROR ', workfolder)
 
       this.updateJob(streamId, {
@@ -348,8 +348,8 @@ export class EncoderService {
         status: EncodeStatus.FAILED,
       })
       console.log('ERROR ', workfolder)
-      fs.unlinkSync(workfolder)
-      fs.unlinkSync(downloadFolder)
+      fs.rmSync(workfolder, {recursive: true, force: true})
+      fs.rmSync(downloadFolder, {recursive: true, force: true})
     }
   }
   async executeJob(jobInfoOrId: Object | string) {
