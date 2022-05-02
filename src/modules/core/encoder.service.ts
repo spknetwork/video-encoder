@@ -169,7 +169,7 @@ export class EncoderService {
     const downloader = new Downloader({
       url: sourceUrl,
       directory: downloadFolder,
-      fileName: `${jobInfo.job_id}_src.mp4`,
+      fileName: `${jobInfo.id}_src.mp4`,
       maxAttempts: 6, //Default is 1.
       onError: function (error) {
         //You can also hook into each failed attempt.
@@ -177,11 +177,11 @@ export class EncoderService {
       },
       onProgress: (percentage, chunk, remainingSize) => {
         //Gets called with each chunk.
-        this.events.emit('job.download_update', percentage, jobInfo.job_id)
+        this.events.emit('job.download_update', percentage, jobInfo.id)
       },
     });
     
-    let srcVideo = Path.join(downloadFolder, `${jobInfo.job_id}_src.mp4`);
+    let srcVideo = Path.join(downloadFolder, `${jobInfo.id}_src.mp4`);
     try {
       await downloader.download();
     } catch (error) {
