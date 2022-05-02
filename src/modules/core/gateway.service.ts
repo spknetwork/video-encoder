@@ -81,6 +81,7 @@ export class GatewayService {
         id: peer_did,
         peer_id: nodeInfo.peer_id,
         name: nodeInfo.name,
+        commit_hash: nodeInfo.commit_hash,
         last_seen: new Date(),
         first_seen: new Date()
       } as any)
@@ -90,6 +91,7 @@ export class GatewayService {
           cryptoAccounts: nodeInfo.cryptoAccounts,
           peer_id: nodeInfo.peer_id,
           name: nodeInfo.name,
+          commit_hash: nodeInfo.commit_hash,
           last_seen: new Date(),
         }
       } as any)
