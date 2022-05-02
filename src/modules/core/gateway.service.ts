@@ -281,10 +281,10 @@ export class GatewayService {
       }
       let setResult = {} as any
       if(payload.progressPct) {
-        setResult['progressPct'] = payload.progressPct
+        setResult['progress.progressPct'] = payload.progressPct
       }
       if(payload.download_pct) {
-        setResult['download_pct'] = payload.download_pct
+        setResult['progress.download_pct'] = payload.download_pct
       }
       await this.jobs.findOneAndUpdate(
         {
@@ -293,9 +293,7 @@ export class GatewayService {
         {
           $set: {
             last_pinged: new Date(),
-            progress: {
-              ...setResult
-            },
+            ...setResult,
             ...(payload.progressPct > 1
               ? {
                   status: JobStatus.RUNNING,
