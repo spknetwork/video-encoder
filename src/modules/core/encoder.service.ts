@@ -175,7 +175,7 @@ export class EncoderService {
         //You can also hook into each failed attempt.
         console.log("Error from attempt ", error);
       },
-      onProgress: function (percentage, chunk, remainingSize) {
+      onProgress: (percentage, chunk, remainingSize) => {
         //Gets called with each chunk.
         this.events.emit('job.download_update', percentage, jobInfo.job_id)
       },
