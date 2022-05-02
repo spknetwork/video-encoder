@@ -317,7 +317,7 @@ export class GatewayService {
       status: JobStatus.QUEUED,
       start_date: null,
       last_pinged: null,
-      complete_at: null,
+      completed_at: null,
 
       assigned_to: null,
       assigned_date: null,
@@ -398,7 +398,7 @@ export class GatewayService {
         await this.jobs.findOneAndUpdate(job, {
           $set: {
             status: JobStatus.COMPLETE,
-            complete_at: new Date()
+            completed_at: new Date()
           },
         })
       } else if (!pinning) {

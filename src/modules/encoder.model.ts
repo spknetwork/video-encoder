@@ -44,7 +44,7 @@ export interface GatewayJob {
     assigned_date: Date,
     last_pinged: Date | null, //When node last pinged. After 5 minutes the gateway will reassign
     start_date: Date | null,
-    complete_at: Date | null,
+    completed_at: Date | null,
 
     input: InputObj, 
     result: ResultObj | null 
