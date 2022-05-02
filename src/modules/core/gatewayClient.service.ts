@@ -53,6 +53,7 @@ export class GatewayClient {
             jws: await this.self.identityService.identity.createJWS({
               job_id,
               progressPct: job_data.progressPct,
+              download_pct: job_data.download_pct,
             }),
           })
         }, 5000)
@@ -83,21 +84,8 @@ export class GatewayClient {
           }
         }
         
-        const downloadListener = async (percentage, job_id) => {
-          try {
-            await Axios.post(`${this.apiUrl}/api/v0/gateway/pingJob`, {
-              jws: await this.self.identityService.identity.createJWS({
-                job_id,
-                download_pct: percentage,
-              }),
-            })
-          } catch {
-
-          }
-        }
 
         this.self.encoder.events.on('job.status_update', eventListenr)
-        this.self.encoder.events.on('job.download_update', downloadListener)
         
         
         try {
