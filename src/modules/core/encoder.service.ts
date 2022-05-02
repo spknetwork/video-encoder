@@ -177,7 +177,7 @@ export class EncoderService {
       },
       onProgress: (percentage, chunk, remainingSize) => {
         //Gets called with each chunk.
-        this.events.emit('job.download_update', percentage, jobInfo.id)
+        this.events.emit('job.download_update', Number(percentage), jobInfo.id)
       },
     });
     
