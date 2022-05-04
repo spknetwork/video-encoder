@@ -190,7 +190,7 @@ export class EncoderService {
     } catch (error) {
       //If all attempts fail, the last error is thrown.
       console.log("Final fail", error);
-      fs.unlinkSync(downloadFolder)
+      fs.rmdirSync(downloadFolder)
       throw error;
     }
     console.log(`Downloaded to `, srcVideo)
