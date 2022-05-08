@@ -6,7 +6,7 @@ import { TileDocument } from '@ceramicnetwork/stream-tile'
 import { EncodeStatus, JobStatus } from '../encoder.model'
 import GitCommitInfo from 'git-commit-info'
 
-
+const queue_concurrency = 1
 export class GatewayClient {
   self: CoreService
   apiUrl: string
@@ -18,7 +18,7 @@ export class GatewayClient {
 
     this.getNewJobs = this.getNewJobs.bind(this)
 
-    this.jobQueue = new PQueue({ concurrency: 1 })
+    this.jobQueue = new PQueue({ concurrency: queue_concurrency })
 
     this.activeJobs = {}
   }
@@ -110,7 +110,7 @@ export class GatewayClient {
     const { data } = await Axios.get(`${this.apiUrl}/api/v0/gateway/getJob`)
     console.log(data)
 
-    if (data && this.jobQueue.size === 0) {
+    if (data && this.jobQueue.size === 0 && this.jobQueue.pending === (queue_concurrency - 1)) {
       this.queueJob(data)
     }
   }
@@ -153,6 +153,7 @@ export class GatewayClient {
           })
         } catch (ex) {
           console.log(ex)
+          process.exit(0)
         }
       }, 1000)
     }
