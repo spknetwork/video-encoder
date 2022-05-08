@@ -338,11 +338,11 @@ export class GatewayService {
       $or: [
         {
           status: { $eq: JobStatus.RUNNING },
-          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 5) },
+          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 1) },
         },
         {
           status: { $eq: JobStatus.ASSIGNED },
-          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 5) },
+          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 1) },
         },
       ],
     })
