@@ -281,7 +281,7 @@ export class GatewayService {
       }
       let setResult = {} as any
       if(payload.progressPct) {
-        setResult['progress.progressPct'] = payload.progressPct
+        setResult['progress.pct'] = payload.progressPct
       }
       if(payload.download_pct) {
         setResult['progress.download_pct'] = payload.download_pct
