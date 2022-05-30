@@ -13,12 +13,12 @@ export class ScoringService {
       assigned_to: node_id,
       previous_status: { $in: ['assigned', 'running'] },
       status: 'queued',
-      date: { $lt: new Date(moment().subtract(14, 'day').toISOString()) },
+      date: { $gt: new Date(moment().subtract(7, 'day').toISOString()) },
     })
 
     const jobs = await this.gateway.activity.activity.distinct('job_id', {
       assigned_to: node_id,
-      previous_status: 'assigned',
+      date: { $gt: new Date(moment().subtract(7, 'day').toISOString()) },
     })
 
     const list = await this.gateway.jobs
@@ -68,12 +68,12 @@ export class ScoringService {
         assigned_to: node_id,
         previous_status: { $in: ['assigned', 'running'] },
         status: 'queued',
-        date: { $lt: new Date(moment().subtract(14, 'day').toISOString()) },
+        date: { $gt: new Date(moment().subtract(7, 'day').toISOString()) },
       })
 
       const jobs = await this.gateway.activity.activity.distinct('job_id', {
         assigned_to: node_id,
-        previous_status: 'assigned',
+        date: { $gt: new Date(moment().subtract(7, 'day').toISOString()) },
       })
 
       const list = await this.gateway.jobs
