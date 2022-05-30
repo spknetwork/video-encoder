@@ -35,6 +35,7 @@ interface ResultObj {
 interface InputObj {
     format?: string,
     uri: string
+    size: Number
 }
 
 export interface GatewayJob {
@@ -67,4 +68,21 @@ export interface GatewayWorkerInfo {
         hive: string | Date
     },
     name: string | null
+}
+
+
+export enum JobReason {
+  'JOB_AVAILABLE' = "JOB_AVAILABLE",
+  'NO_JOBS' = "NO_JOBS",
+  'RANK_REQUIREMENT' = "RANK_REQUIREMENT",
+  'ASSIGNED_LIMIT_HIT' = "ASSIGNED_LIMIT_HIT",
+  'RATE_LIMITED' = "RATE_LIMITED",
+  'BANNED' = "BANNED",
+  'BANNED_TEMP' = "BANNED_TEMP",
+  'BANNED_UNTIL_RESTART' = "BANNED_UNTIL_RESTART",
+}
+
+export interface JobPackage {
+    reason: JobReason
+    job?: GatewayJob
 }

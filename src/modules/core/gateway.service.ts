@@ -19,6 +19,7 @@ import PQueue from 'p-queue'
 import IpfsCluster from 'ipfs-cluster-api'
 import { IpfsClusterPinAdd } from '../../common/utils'
 import { ActivityService } from './oplog.service'
+import { ScoringService } from './gateway/scoring'
 
 export class GatewayService {
   self: CoreService
@@ -29,6 +30,7 @@ export class GatewayService {
   claimQueue: PQueue
   ipfsCluster: IpfsCluster
   activity: ActivityService
+  scoring: ScoringService
 
   constructor(self) {
     this.self = self
@@ -425,6 +427,7 @@ export class GatewayService {
       NodeSchedule.scheduleJob('15 * * * * *', this.runReassign)
       NodeSchedule.scheduleJob('45 * * * * *', this.runReassign)
       NodeSchedule.scheduleJob('45 * * * * *', this.runUploadingCheck)
+      this.scoring = new ScoringService(this)
 
       console.log(
         JSON.stringify(

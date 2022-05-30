@@ -26,10 +26,14 @@ export class IdentityService {
         const key = new Ed25519Provider(privateKey)
         const did = new DID({ provider:key, resolver: KeyResolver.getResolver() })
         await did.authenticate()
-
+        
         await this.self.ceramic.setDID(did)
         
         this.identity = did;
+        
+        if(!this.self.config.get('node.publicKey')) {
+            this.self.config.set('node.publicKey', this.identity.id);
+        }
 
         console.info(`Logged in with ${did.id}`)
     }
