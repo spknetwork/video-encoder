@@ -20,6 +20,7 @@ import IpfsCluster from 'ipfs-cluster-api'
 import { IpfsClusterPinAdd } from '../../common/utils'
 import { ActivityService } from './oplog.service'
 import { ScoringService } from './gateway/scoring'
+import Axios from 'axios'
 
 export class GatewayService {
   self: CoreService
