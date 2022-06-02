@@ -313,6 +313,8 @@ export class GatewayService {
   async nodeJobs() {}
 
   async createJob(url: string, metadata, storageMetadata) {
+    const {headers} = await Axios.head(url)
+    console.log(headers['content-length'])
     const obj = {
       id: uuid(),
       created_at: new Date(),
@@ -327,6 +329,7 @@ export class GatewayService {
       storageMetadata,
       input: {
         uri: url,
+        size: Number(headers['content-length'])
       },
       result: null,
     }
