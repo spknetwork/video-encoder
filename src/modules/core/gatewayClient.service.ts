@@ -107,11 +107,50 @@ export class GatewayClient {
   }
   async getNewJobs() {
     console.log(this.apiUrl)
-    const { data } = await Axios.get(`${this.apiUrl}/api/v0/gateway/getJob`)
-    console.log(data)
+    /*const { data } = await Axios.get(`${this.apiUrl}/api/v0/gateway/getJob`)
+    console.log(data)*/
+    const { data } = await Axios.post(`${this.apiUrl}/v1/graphql`, {
+      query: `
+      query Query($node_id: String) {
+        queueJob(node_id: $node_id) {
+          reason
+          job {
+            id
+            status
+            created_at
+            last_pinged
+            start_date
+            completed_at
+            input {
+              format
+              uri
+              size
+            }
+            result {
+              format
+              uri
+              size
+            }
+            sync
+            storageMetadata
+            metadata
+          }
+        }
+      }
+      `,
+      variables: {
+        node_id: this.self.identityService.identity.id
+      }
+    })
 
-    if (data && this.jobQueue.size === 0 && this.jobQueue.pending === (queue_concurrency - 1)) {
-      this.queueJob(data)
+    console.log('jobInfo', JSON.stringify(data), {
+      node_id: this.self.identityService.identity.id
+    })
+
+    if(data.data.queueJob.job) {
+      if (this.jobQueue.size === 0 && this.jobQueue.pending === (queue_concurrency - 1)) {
+        this.queueJob(data.data.queueJob.job)
+      }
     }
   }
 
