@@ -206,9 +206,11 @@ export class EncoderService {
             }
           }
         }*/
-        for (var key of Object.keys(enc)) {
-          if (key.includes(`h264_qsv`)) {
-            return resolve(key)
+        if(enc) {
+          for (var key of Object.keys(enc)) {
+            if (key.includes(`h264_qsv`)) {
+              return resolve(key)
+            }
           }
         }
         return resolve('libx264')
