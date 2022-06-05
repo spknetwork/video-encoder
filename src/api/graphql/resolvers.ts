@@ -1,5 +1,6 @@
+import moment from "moment";
 import { encoderContainer } from ".."
-import {JobReason} from '../../modules/encoder.model'
+import {JobReason, JobStatus} from '../../modules/encoder.model'
 
 class JobInfo {
     data: any;
@@ -39,23 +40,103 @@ class JobInfo {
 }
 
 export const Resolvers = {
-    async queueJob() {
-        const job = await encoderContainer.self.gateway.askJob()
+    async queueJob(args: any) {
+        const queuedJobs = await encoderContainer.self.gateway.jobs.find(
+            {
+              status: JobStatus.QUEUED,
+            },
+            {
+              sort: {
+                created_at: 1,
+              },
+              limit: 20
+            },
+          ).toArray()
 
-        let defaultReason;
-        let jobOut; 
-        if(job) {
-            defaultReason = JobReason.JOB_AVAILABLE;
-            jobOut = new JobInfo(job)
-        } else {
-            defaultReason = JobReason.NO_JOBS
+          
+        //const job = await encoderContainer.self.gateway.askJob()
+
+        if(!args.node_id) {
+            let job = queuedJobs.pop();
+            if(job) {
+                return {
+                    job: new JobInfo(job),
+                    reason: JobReason.JOB_AVAILABLE
+                }
+            } else {
+                return {
+                    job: null,
+                    reason: JobReason.NO_JOBS
+                }
+            }
         }
 
-        console.log(job)
+        const scoreMap = await encoderContainer.self.gateway.scoring.scoreMap();
+
+        const sorted_score = scoreMap.sort((a, b) => {
+            return b.byte_rate - a.byte_rate
+        })
+
         
-        return {
-            job: jobOut,
-            reason: defaultReason
+        const node_id = args.node_id
+
+        const preferred_nodes = []
+        for(let score_node of sorted_score) {
+            if(score_node.load === 0 && preferred_nodes.length !== 3) {
+                preferred_nodes.push(score_node.node_id)
+            }
+        }
+        
+        //console.log('preferred_nodes', preferred_nodes, scoreMap)
+        
+        const nodeInfo = await encoderContainer.self.gateway.clusterNodes.findOne({
+            node_id: node_id
+        })
+
+        const nodeScore = scoreMap.find(e => e.node_id === node_id);
+
+        if(nodeInfo?.banned === true) {
+            return {
+                reason: JobReason.BANNED,
+                job: null
+            }
+        }
+
+        
+
+        if(preferred_nodes.includes(node_id) || nodeScore.low_precision) {
+            let job = queuedJobs.pop();
+            if(job) {
+                return {
+                    job: new JobInfo(job),
+                    reason: JobReason.JOB_AVAILABLE
+                }
+            } else {
+                return {
+                    job: null,
+                    reason: JobReason.NO_JOBS
+                }
+            }
+        } else {
+            let jobOut;
+            for(let job of queuedJobs) {
+                if((moment.duration('30', 'minutes').asSeconds() > job.input.size / nodeScore.byte_rate)) {
+                    jobOut = new JobInfo(job);
+                    break;
+                }
+            }
+
+            if(jobOut) {
+                return {
+                    reason: JobReason.JOB_AVAILABLE,
+                    job: jobOut
+                }
+            }
+            
+            return {
+                reason: JobReason.RANK_REQUIREMENT,
+                job: null
+            }
         }
     },
     async scoreMap() {

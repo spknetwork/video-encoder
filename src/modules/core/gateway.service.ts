@@ -86,7 +86,8 @@ export class GatewayService {
         name: nodeInfo.name,
         commit_hash: nodeInfo.commit_hash,
         last_seen: new Date(),
-        first_seen: new Date()
+        first_seen: new Date(),
+        banned: false
       } as any)
     } else {
       await this.clusterNodes.findOneAndUpdate(data, {

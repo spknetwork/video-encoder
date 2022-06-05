@@ -41,8 +41,6 @@ export class ScoringService {
       }
     })
 
-  
-
     return {
       node_id,
       //jobActivity,
@@ -59,10 +57,10 @@ export class ScoringService {
     const assignedList = (await this.gateway.activity.activity.distinct('assigned_to')).filter(
       (e) => !!e,
     )
-    console.log(assignedList)
 
     let scoreMap: Record<string, number> = {}
     let testOut = []
+    let aggregate_byte_rate = 0
     for (let node_id of assignedList) {
       const jobActivity = await this.gateway.activity.activity.distinct('job_id', {
         assigned_to: node_id,
@@ -96,18 +94,30 @@ export class ScoringService {
         }
       })
 
+      const loadCount = await this.gateway.jobs.countDocuments({
+        status: { $in: ['assigned', 'running'] },
+        assigned_to: node_id,
+      })
+
+      console.log(weightedSum, list.length)
+      const byte_rate = Number((weightedSum / list.length).toFixed()) || 0
+      aggregate_byte_rate = aggregate_byte_rate + byte_rate
       testOut.push({
         node_id,
         //jobActivity,
         //jobs,
-        byte_rate: Number((weightedSum / list.length).toFixed()),
+        byte_rate,
         jobs_reassigned: jobActivity.length,
         jobs_total: jobs.length,
         reassign_rate: Number((jobActivity.length / jobs.length).toFixed(4)),
         low_precision: jobs.length < 15,
+        load: loadCount,
       })
     }
-    return testOut
+    return testOut.map((e) => {
+      e.byte_rate_share = e.byte_rate / aggregate_byte_rate
+      return e
+    })
   }
 
   /**

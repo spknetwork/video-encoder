@@ -33,7 +33,7 @@ export const schema = `
     }
 
     type Query {
-        queueJob: QueueJob 
+        queueJob(node_id: String): QueueJob 
         scoreMap: JSON
         nodeScore(node_id: String): JSON
     }

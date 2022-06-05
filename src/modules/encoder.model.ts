@@ -68,6 +68,7 @@ export interface GatewayWorkerInfo {
         hive: string | Date
     },
     name: string | null
+    banned?: boolean
 }
 
 
