@@ -206,6 +206,9 @@ export class EncoderService {
             }
           }
         }*/
+        if(e) {
+          console.log(e)
+        }
         if(enc) {
           for (var key of Object.keys(enc)) {
             if (key.includes(`h264_qsv`)) {
