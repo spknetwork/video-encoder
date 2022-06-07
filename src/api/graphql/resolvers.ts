@@ -104,7 +104,7 @@ export const Resolvers = {
 
         
 
-        if(preferred_nodes.includes(node_id) || (nodeScore?.low_precision || true)) {
+        if(preferred_nodes.includes(node_id) || ((typeof nodeScore?.low_precision === 'undefined') ? nodeScore?.low_precision : true)) {
             let job = queuedJobs.pop();
             if(job) {
                 return {
