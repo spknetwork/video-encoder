@@ -14,6 +14,8 @@ services:
       - spk-video-encoder
     environment:
       IPFS_HOST: ipfs:5001
+    volumes:
+      - ./data/video-encoder:/root/.spk-encoder
   ipfs:
     container_name: ipfs2
     image: ipfs/go-ipfs:latest

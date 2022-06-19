@@ -3,3 +3,4 @@ coverage
 logs
 dist
 encoder.db
+data
