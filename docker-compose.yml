@@ -1,0 +1,32 @@
+version: "3.3"
+
+services:
+  spk-video-encoder: # name of the service
+    build: .
+    image: spk-video-encoder # the image to use
+    container_name: spk-video-encoder # what to label the container for docker ps
+    restart: always # restart if failed, until we stop it ourselves
+    #external_links:
+      #- mongo
+    depends_on:
+      - ipfs
+    networks:
+      - spk-video-encoder
+    environment:
+      IPFS_HOST: ipfs:5001
+  ipfs:
+    container_name: ipfs2
+    image: ipfs/go-ipfs:latest
+    command:
+      - daemon
+      - --enable-pubsub-experiment
+    networks:
+      - spk-video-encoder
+    environment: 
+      IPFS_PATH: /etc/ipfs
+    volumes:
+      - ./data/ipfs:/etc/ipfs
+      
+networks:
+  spk-video-encoder:
+    driver: bridge
