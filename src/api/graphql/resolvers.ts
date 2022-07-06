@@ -93,7 +93,7 @@ export const Resolvers = {
             node_id: node_id
         })
 
-        const nodeScore = scoreMap.find(e => e.node_id === node_id);
+        const nodeScore = await encoderContainer.self.gateway.scoring.nodeScore(node_id)
 
         if(nodeInfo?.banned === true) {
             return {
@@ -103,8 +103,7 @@ export const Resolvers = {
         }
 
         
-
-        if(preferred_nodes.includes(node_id) || ((typeof nodeScore?.low_precision === 'undefined') ? nodeScore?.low_precision : true)) {
+        if(preferred_nodes.includes(node_id) || ((typeof nodeScore?.low_precision !== 'undefined') ? nodeScore?.low_precision : true)) {
             let job = queuedJobs.pop();
             if(job) {
                 return {
