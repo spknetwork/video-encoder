@@ -20,6 +20,8 @@ const PEERINFO =  {
   pubKey: 'CAASpgIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC90BTfJW9ZDNic30Xkr4acCgEZWRmczeT/KVsecK98/qaTm4nvenHzuqXnh+CuBj1UKqHFjifTz6jy1oCSlJEEJgki0N/Vt/9Dkn/bn8Vjts/5M1ZlYbNfPJx6yEaWDClGz43rXtlHXKiwufPJ4dwPKQQZv4EshOEptAhO2913GB8D7/8bkaAlT+bwG+76jG5XkG9Pp0cHytOZWPBFYYRomOnAfDNRmbAK3lF0oyBXPuOd64AB9P/+wVrGrobKOZO5AiQkfBi0lYqx153tZ8CA5JxpPBLcmRoKxMA9Bmar7DjrVBi8fba1x4d3PufLzPwBIFVLV5mpkGMbtgQL74TNAgMBAAE='
 }
 
+const ENABLE_P2P = process.env.ENABLE_P2P || false
+
 export class Lib2pService {
     self: CoreService
     libp2p: Libp2p
@@ -78,6 +80,9 @@ export class Lib2pService {
     }
 
     async start() {
+        if(!ENABLE_P2P) {
+          return;
+        }
         const idListener = await PeerId.createFromJSON(PEERINFO)
         console.log('P2P interface starting up')
         this.libp2p = await Libp2p.create({
