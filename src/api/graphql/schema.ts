@@ -2,15 +2,16 @@
 
 export const schema = `
     scalar JSON
+    scalar Long
     type ResultObj {
         format: String
         uri: String
-        size: Int
+        size: Long
     }
     type InputObj {
         format: String
         uri: String
-        size: Int
+        size: Long
     }
     type Job {
         id: String
