@@ -60,14 +60,13 @@ export class GatewayClient {
 
         const eventListenr = async (jobUpdate) => {
           console.log(jobUpdate)
-          console.log(jobUpdate.streamId.toString(), job.streamId)
 
           //Make sure the event is not destine for another job
           if (jobUpdate.streamId.toString() === job.streamId) {
-            console.log(jobUpdate.content.status, JobStatus.COMPLETE)
+            console.log(`Current Status: ${job.streamId} ${jobUpdate.content.status}`)
             //Ensure the job is complete and not something else
             if (jobUpdate.content.status === JobStatus.COMPLETE) {
-              console.log('posting gg')
+              console.log(`Encode Complete ${job_id} submitting`)
               //Submitting the job
               await Axios.post(`${this.apiUrl}/api/v0/gateway/finishJob`, {
                 jws: await this.self.identityService.identity.createJWS({
