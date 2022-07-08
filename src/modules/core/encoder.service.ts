@@ -416,7 +416,7 @@ export class EncoderService {
         client_id: client_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        peerid: this.self.p2pService.libp2p.peerId.toB58String(),
+        peerid: (await this.self.ipfs.id()).id,
         input: {
           url,
         },
