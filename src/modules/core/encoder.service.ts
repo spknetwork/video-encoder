@@ -425,10 +425,10 @@ export class EncoderService {
             name: '1080p',
             size: '?x1080',
           },
-          // {
-          //   name: '720p',
-          //   size: '?x720',
-          // },
+          {
+            name: '720p',
+            size: '?x720',
+          },
           {
             name: '480p',
             size: '?x480',
