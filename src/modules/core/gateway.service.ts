@@ -199,9 +199,7 @@ export class GatewayService {
   //For now fail job and reject job do the same thing. In the future fails will be accounted for and videos with X number of fails will be removed.
   //Plus potentially applying a score to the encoder..
   async failJob(job_id, node_id) {
-    const jobInfo = await this.jobs.findOne({
-      id: job_id,
-    })
+    const jobInfo = await this.jobs.findOne({id: job_id})
     if (!jobInfo) {
       return
     }
@@ -228,10 +226,7 @@ export class GatewayService {
           },
         )
         // read the same job count for failures
-        const jobInfo = await this.jobs.findOne(
-          { id: job_id, status: JobStatus.QUEUED },
-          { sort: { created_at: 1 } },
-        )
+        const jobInfo = await this.jobs.findOne({ id: job_id, status: JobStatus.QUEUED })
         // If job is in QUEUED state & failures are more than equal to 5, update the status to FAILED
         if (jobInfo.status === JobStatus.QUEUED && jobInfo.num_fails >= 5) {
           await this.jobs.findOneAndUpdate({ id: job_id }, { $set: { status: JobStatus.FAILED } })
