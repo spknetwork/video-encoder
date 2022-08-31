@@ -23,7 +23,8 @@ export enum JobStatus {
     ASSIGNED = "assigned",
     RUNNING = "running",
     UPLOADING = 'uploading',
-    COMPLETE = 'complete'
+    COMPLETE = 'complete',
+    FAILED = 'failed'
 }
 
 interface ResultObj {
