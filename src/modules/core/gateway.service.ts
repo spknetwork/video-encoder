@@ -360,6 +360,10 @@ export class GatewayService {
           status: { $eq: JobStatus.ASSIGNED },
           last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 1) },
         },
+        {
+          status: { $eq: JobStatus.UPLOADING },
+          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 1) },
+        },
       ],
     })
     console.log(`${await expiredJobs.count()} number of jobs has expired`)
@@ -438,8 +442,7 @@ export class GatewayService {
       this.clusterNodes = this.db.collection('cluster_nodes')
       this.activity = new ActivityService(this.self)
 
-      NodeSchedule.scheduleJob('15 * * * * *', this.runReassign)
-      NodeSchedule.scheduleJob('45 * * * * *', this.runReassign)
+      NodeSchedule.scheduleJob('*/15 * * * *', this.runReassign) // run every 15 mins
       NodeSchedule.scheduleJob('45 * * * * *', this.runUploadingCheck)
       this.scoring = new ScoringService(this)
 
