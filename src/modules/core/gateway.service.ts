@@ -87,7 +87,7 @@ export class GatewayService {
         commit_hash: nodeInfo.commit_hash,
         last_seen: new Date(),
         first_seen: new Date(),
-        banned: false
+        banned: false,
       } as any)
     } else {
       await this.clusterNodes.findOneAndUpdate(data, {
@@ -161,33 +161,36 @@ export class GatewayService {
       return;
     }
 
-    if(jobInfo.status === JobStatus.ASSIGNED || jobInfo.status === JobStatus.RUNNING) {
-      if(jobInfo.assigned_to === node_id) {
+    if (jobInfo.status === JobStatus.ASSIGNED || jobInfo.status === JobStatus.RUNNING) {
+      if (jobInfo.assigned_to === node_id) {
         await this.activity.changeState({
           job_id: job_id,
           new_status: JobStatus.QUEUED,
           assigned_to: null,
           meta: {
-            reason: 'rejected'
-          }
+            reason: 'rejected',
+          },
         })
-        await this.jobs.findOneAndUpdate({
-          id: job_id
-        }, {
-          $set: {
-            status: JobStatus.QUEUED,
-            assigned_date: null,
-            assigned_to: null,
-            last_pinged: null
-          }
-        })
+        await this.jobs.findOneAndUpdate(
+          {
+            id: job_id,
+          },
+          {
+            $set: {
+              status: JobStatus.QUEUED,
+              assigned_date: null,
+              assigned_to: null,
+              last_pinged: null,
+            },
+          },
+        )
       }
     }
   }
 
   async getNodeInfo(node_id: string) {
     const clusterNode = await this.clusterNodes.findOne({
-      id: node_id
+      id: node_id,
     })
 
     return clusterNode
@@ -196,32 +199,38 @@ export class GatewayService {
   //For now fail job and reject job do the same thing. In the future fails will be accounted for and videos with X number of fails will be removed.
   //Plus potentially applying a score to the encoder..
   async failJob(job_id, node_id) {
-    const jobInfo = await this.jobs.findOne({
-      id: job_id
-    })
-    if(!jobInfo) {
-      return;
+    const jobInfo = await this.jobs.findOne({id: job_id})
+    if (!jobInfo) {
+      return
     }
-    if(jobInfo.status === JobStatus.ASSIGNED || jobInfo.status === JobStatus.RUNNING) { 
-      if(jobInfo.assigned_to === node_id) {
+    if (jobInfo.status === JobStatus.ASSIGNED || jobInfo.status === JobStatus.RUNNING) {
+      if (jobInfo.assigned_to === node_id) {
         await this.activity.changeState({
           job_id: job_id,
           new_status: JobStatus.QUEUED,
           assigned_to: null,
           meta: {
-            reason: 'failed'
-          }
+            reason: 'failed',
+          },
         })
-        await this.jobs.findOneAndUpdate({
-          id: job_id
-        }, {
-          $set: {
-            status: JobStatus.QUEUED,
-            assigned_date: null,
-            assigned_to: null,
-            last_pinged: null
-          }
-        })
+        await this.jobs.findOneAndUpdate(
+          { id: job_id },
+          {
+            $set: {
+              status: JobStatus.QUEUED,
+              assigned_date: null,
+              assigned_to: null,
+              last_pinged: null,
+            },
+            $inc: { num_fails: 1 },
+          },
+        )
+        // read the same job count for failures
+        const jobInfo = await this.jobs.findOne({ id: job_id, status: JobStatus.QUEUED })
+        // If job is in QUEUED state & failures are more than equal to 5, update the status to FAILED
+        if (jobInfo.status === JobStatus.QUEUED && jobInfo.num_fails >= 5) {
+          await this.jobs.findOneAndUpdate({ id: job_id }, { $set: { status: JobStatus.FAILED } })
+        }
       }
     }
   }
@@ -239,7 +248,7 @@ export class GatewayService {
           await this.activity.changeState({
             job_id: payload.job_id,
             new_status: JobStatus.UPLOADING,
-            assigned_to: did
+            assigned_to: did,
           })
           await this.jobs.findOneAndUpdate(jobInfo, {
             $set: {
@@ -253,7 +262,7 @@ export class GatewayService {
           const out = await IpfsClusterPinAdd(payload.output.cid, {
             metadata: jobInfo.storageMetadata,
             replicationFactorMin: 2,
-            replicationFactorMax: 3
+            replicationFactorMax: 3,
           })
           console.log(out)
         } else {
@@ -276,18 +285,18 @@ export class GatewayService {
       data.assigned_to === node_id &&
       (data.status === JobStatus.ASSIGNED || data.status === JobStatus.RUNNING)
     ) {
-      if(payload.progressPct > 1 && data.status !== JobStatus.RUNNING) {
+      if (payload.progressPct > 1 && data.status !== JobStatus.RUNNING) {
         await this.activity.changeState({
           job_id,
           assigned_to: node_id,
-          new_status: JobStatus.RUNNING
+          new_status: JobStatus.RUNNING,
         })
       }
       let setResult = {} as any
-      if(payload.progressPct) {
+      if (payload.progressPct) {
         setResult['progress.pct'] = payload.progressPct
       }
-      if(payload.download_pct) {
+      if (payload.download_pct) {
         setResult['progress.download_pct'] = payload.download_pct
       }
       await this.jobs.findOneAndUpdate(
@@ -315,7 +324,7 @@ export class GatewayService {
   async nodeJobs() {}
 
   async createJob(url: string, metadata, storageMetadata) {
-    const {headers} = await Axios.head(url)
+    const { headers } = await Axios.head(url)
     console.log(headers['content-length'])
     const obj = {
       id: uuid(),
@@ -331,7 +340,7 @@ export class GatewayService {
       storageMetadata,
       input: {
         uri: url,
-        size: Number(headers['content-length'])
+        size: Number(headers['content-length']),
       },
       result: null,
     }
@@ -351,6 +360,10 @@ export class GatewayService {
           status: { $eq: JobStatus.ASSIGNED },
           last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 1) },
         },
+        {
+          status: { $eq: JobStatus.UPLOADING },
+          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 1) },
+        },
       ],
     })
     console.log(`${await expiredJobs.count()} number of jobs has expired`)
@@ -361,8 +374,8 @@ export class GatewayService {
         new_status: JobStatus.QUEUED,
         assigned_to: job.assigned_to,
         meta: {
-          reason: 'reassigned'
-        }
+          reason: 'reassigned',
+        },
       })
       await this.jobs.findOneAndUpdate(job, {
         $set: {
@@ -400,19 +413,19 @@ export class GatewayService {
         await this.activity.changeState({
           job_id: job.id,
           new_status: JobStatus.COMPLETE,
-          assigned_to: job.assigned_to
+          assigned_to: job.assigned_to,
         })
         await this.jobs.findOneAndUpdate(job, {
           $set: {
             status: JobStatus.COMPLETE,
-            completed_at: new Date()
+            completed_at: new Date(),
           },
         })
       } else if (!pinning) {
         await IpfsClusterPinAdd(cid, {
           metadata: job.storageMetadata,
           replicationFactorMin: 2,
-          replicationFactorMax: 3
+          replicationFactorMax: 3,
         })
       }
       console.log(`${job.id}: ${uploaded}`)
@@ -429,8 +442,7 @@ export class GatewayService {
       this.clusterNodes = this.db.collection('cluster_nodes')
       this.activity = new ActivityService(this.self)
 
-      NodeSchedule.scheduleJob('15 * * * * *', this.runReassign)
-      NodeSchedule.scheduleJob('45 * * * * *', this.runReassign)
+      NodeSchedule.scheduleJob('*/15 * * * *', this.runReassign) // run every 15 mins
       NodeSchedule.scheduleJob('45 * * * * *', this.runUploadingCheck)
       this.scoring = new ScoringService(this)
 
@@ -451,27 +463,23 @@ export class GatewayService {
       })
     }
   }
-  async stop() {
-
-  }
+  async stop() {}
 }
 void (async () => {
- try {
-     let ipfsCluster = new IpfsCluster({
-       host: '',
-       port: '9094',
-       protocol: 'http',
-       headers: {
-         authorization: '',
-       },
-     })
-     const a = await ipfsCluster.status('QmaCRG6bam6XJiXfVSSPkXAY388GUgv22bvhqkHNHeqL8h')
-     const b = await ipfsCluster.status('QmeeZ8sDCG6krbLQ7h5Su4YXjKA6qVjGW6FeRCc7u5HiCP')
-     console.log(a)
-     console.log(b)
-     console.log(await ipfsCluster.pin.ls())
-     await ipfsCluster.pin.rm('QmaSL1VwhRERhHPnddb19o6K2BhRazVTtDZq1TVuqQA5dd')
- } catch {
-
- }
+  try {
+    let ipfsCluster = new IpfsCluster({
+      host: '',
+      port: '9094',
+      protocol: 'http',
+      headers: {
+        authorization: '',
+      },
+    })
+    const a = await ipfsCluster.status('QmaCRG6bam6XJiXfVSSPkXAY388GUgv22bvhqkHNHeqL8h')
+    const b = await ipfsCluster.status('QmeeZ8sDCG6krbLQ7h5Su4YXjKA6qVjGW6FeRCc7u5HiCP')
+    console.log(a)
+    console.log(b)
+    console.log(await ipfsCluster.pin.ls())
+    await ipfsCluster.pin.rm('QmaSL1VwhRERhHPnddb19o6K2BhRazVTtDZq1TVuqQA5dd')
+  } catch {}
 })()
