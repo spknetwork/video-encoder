@@ -143,5 +143,55 @@ export const Resolvers = {
     },
     async nodeScore(args: any) {
         return await encoderContainer.self.gateway.scoring.nodeScore(args.node_id)
+    },
+    async ipfsBootstrap() {
+        const peers = await encoderContainer.self.gateway.ipfsCluster.peers.ls()
+        
+        let outPeers = []
+        for(let peer of Object.values<any>(peers)) {
+            if(peer.ipfs.id) {
+                outPeers.push(`/p2p/${peer.ipfs.id}`)
+            }
+        }
+        
+        return {
+            peers: outPeers
+        }
+    },
+    async gatewayStats() {
+        const queueLagRecords = await encoderContainer.self.gateway.activity.activity.find({
+            previous_status: 'queued',
+            status: "assigned",
+            date: {
+                $gt: moment().subtract('1', 'day').toDate()
+            }
+        }).toArray()
+
+        const queueRecords = await encoderContainer.self.gateway.jobs.find({
+            created_at: {
+                $gt: moment().subtract('1', 'day').toDate()
+            }
+        }).toArray()
+
+        let queueLag = 0;
+        for(let record of queueLagRecords) {
+            queueLag = queueLag + record.duration
+        }
+
+        queueLag = queueLag / queueLagRecords.length
+
+        let completeLag = 0;
+        for(let record of queueRecords) {
+            if(record.completed_at) {
+                completeLag = completeLag + (record.completed_at - record.created_at)
+            }
+        }
+
+        completeLag = completeLag / queueRecords.length
+        
+        return {
+            queueLag: Math.round(queueLag),
+            completeLag: Math.round(completeLag / 1000)
+        }
     }
 }

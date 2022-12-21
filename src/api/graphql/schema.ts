@@ -33,10 +33,17 @@ export const schema = `
         job: Job
     }
 
+    type GatewayStats {
+        queueLag: Int
+        completeLag: Int
+    }
+
     type Query {
         queueJob(node_id: String): QueueJob 
         scoreMap: JSON
         nodeScore(node_id: String): JSON
+        ipfsBootstrap: JSON
+        gatewayStats: GatewayStats
     }
 
 `
