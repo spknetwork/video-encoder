@@ -76,6 +76,9 @@ export class GatewayClient {
                   },
                 }),
               })
+              this.ipfsBootstrap().catch((e) => {
+                console.log(e)
+              })
               delete this.activeJobs[job_id];
               clearInterval(pid)
               this.self.encoder.events.off('job.status_update', eventListenr)
@@ -168,6 +171,21 @@ export class GatewayClient {
       })
     })
   }
+  
+  async ipfsBootstrap() {
+    const {data: gqlResult} = await Axios.post(`${this.apiUrl}/v1/graphql`, {
+      query: `
+        {
+          ipfsBootstrap
+        }
+      `
+    })
+    const peers = gqlResult.data.ipfsBootstrap.peers;
+
+    for(let peer of peers) {
+      await this.self.ipfs.swarm.connect(peer)
+    }
+  }
 
   async start() {
     if (this.self.config.get('remote_gateway.enabled')) {
@@ -175,7 +193,8 @@ export class GatewayClient {
       NodeSchedule.scheduleJob(`${Math.round(Math.random() * (60 + 1))} * * * * *`, this.getNewJobs)
 
       this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
-
+      
+      await this.ipfsBootstrap()
 
       setTimeout(async() => {
         try {
