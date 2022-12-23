@@ -349,7 +349,6 @@ export class GatewayService {
   }
 
   async runReassign() {
-    console.log('running ', new Date())
     const expiredJobs = await this.jobs.find({
       $or: [
         {

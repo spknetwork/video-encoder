@@ -66,6 +66,8 @@ export class ActivityService {
             duration: duration / 1000,
             date,
 
+            meta: args.meta,
+
             state: args.state,
             assigned_to: args.assigned_to
         }

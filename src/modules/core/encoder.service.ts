@@ -166,6 +166,14 @@ export class EncoderService {
       sourceUrl = jobInfo.input.url
     }
 
+    const startTime = new Date();
+    let download_pct = 0;
+    const slowUpdate = setInterval(() => {
+      this.pouch.upsert(jobInfo.id, (doc) => {
+        doc.download_pct = download_pct;
+        return doc
+      })
+    }, 500)
     const downloader = new Downloader({
       url: sourceUrl,
       directory: downloadFolder,
@@ -177,23 +185,22 @@ export class EncoderService {
       },
       onProgress: (inputPercentage, chunk, remainingSize) => {
         //Gets called with each chunk.
-        this.pouch.upsert(jobInfo.id, (doc) => {
-          doc.download_pct = Number(inputPercentage);
-          return doc
-        })
+        download_pct = Number(inputPercentage);
       },
     });
     
     let srcVideo = Path.join(downloadFolder, `${jobInfo.id}_src.mp4`);
     try {
       await downloader.download();
+      clearInterval(slowUpdate)
     } catch (error) {
       //If all attempts fail, the last error is thrown.
       console.log("Final fail", error);
       fs.rmdirSync(downloadFolder)
+      clearInterval(slowUpdate)
       throw error;
     }
-    console.log(`Downloaded to `, srcVideo)
+    console.log(`Downloaded to `, srcVideo, `in ${new Date().getTime() - startTime.getTime()}ms`)
 
     var command = ffmpeg(srcVideo)
 
@@ -248,7 +255,8 @@ export class EncoderService {
     this.updateJob(streamId, {
       status: EncodeStatus.RUNNING,
     })
-    console.log(jobInfo)
+
+    console.log('Started at', `in ${new Date().getTime() - startTime.getTime()}ms`)
     let stage = 0
     let sizes = []
     let codecData
