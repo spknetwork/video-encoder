@@ -372,10 +372,9 @@ export class EncoderService {
     } else {
       throw new Error('Invalid input')
     }
-    this.events.on('job.progress', (e, b) => {
-      console.log('receiving progress here 100%')
-      console.log(e, b)
-    })
+    // this.events.on('job.progress', (e, b) => {
+
+    // })
 
     const out = await this.executeJobRaw(jobInfo, streamId)
     console.log(out)

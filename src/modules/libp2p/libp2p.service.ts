@@ -46,8 +46,6 @@ export class Lib2pService {
         
         if(decodedMessage.type === MESSAGE_TYPES.SUBSCRIBE_UPDATE) {
           listener = this.self.encoder.events.on('job.progress', (streamId, statusUpdate) => {
-            console.log('rxl is receiving update')
-            console.log(streamId, decodedMessage.streamId)
             if(streamId === decodedMessage.streamId) {
               console.log(statusUpdate)
               pushable.push(encode({
