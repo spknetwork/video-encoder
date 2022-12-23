@@ -13,6 +13,7 @@ interface Activity {
     assigned_to: string;
 
     state: any
+    meta: any
 }
 
 export class ActivityService {
