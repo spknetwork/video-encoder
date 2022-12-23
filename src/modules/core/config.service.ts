@@ -123,7 +123,7 @@ export class Config {
     const defaultConfig = {
       gateway_client: {
         //masters: [], //List of gateway API endpoints to follow. Currently not supporting multiple gateways
-        gateway_url: '',
+        gateway_url: 'https://encoder-gateway.infra.3speak.tv',
         queue_max_length: 1, //Don't overallocate your local node.
         queue_concurrency: 1,
         async_uploads: false //Allows to release itself from jobs early before they are completely uploaded. Not implemented
@@ -151,6 +151,10 @@ export class Config {
       admin: {
         //List of admin DIDs
         controllers: [],
+      },     
+      remote_gateway: {
+        enabled: true,
+        api: "https://encoder-gateway.infra.3speak.tv"
       },
     }
 
