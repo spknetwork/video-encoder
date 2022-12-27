@@ -169,7 +169,8 @@ export const Resolvers = {
 
         const queueRecords = await encoderContainer.self.gateway.jobs.find({
             created_at: {
-                $gt: moment().subtract('1', 'day').toDate()
+                $gt: moment().subtract('1', 'day').toDate(),
+                $exists: true
             }
         }).toArray()
 
@@ -179,19 +180,36 @@ export const Resolvers = {
         }
 
         queueLag = queueLag / queueLagRecords.length
-
+        
+        
+        
         let completeLag = 0;
+        let totalSize = 0;
         for(let record of queueRecords) {
             if(record.completed_at) {
                 completeLag = completeLag + (record.completed_at - record.created_at)
+                totalSize = totalSize + (record.input.size)
             }
         }
 
         completeLag = completeLag / queueRecords.length
+        totalSize = totalSize / queueRecords.length
+
+
+        /**
+         * Defined as the number of average bytes processed per video divided by average lag per video
+         * Goal is to find out in a simple fashion if complete is caused by lack of processing resources/bags OR large number of long videos naturally taking longer to process.
+         * Average byte rate for videos within last 24 hours. Note: includes queue time as part of equation
+         */
+        let averageByteRate  = totalSize / (completeLag / 1000)
+        
+
+
         
         return {
             queueLag: Math.round(queueLag),
-            completeLag: Math.round(completeLag / 1000)
+            completeLag: Math.round(completeLag / 1000),
+            averageByteRate: Math.round(averageByteRate)
         }
     }
 }
