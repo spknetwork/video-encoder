@@ -32,6 +32,7 @@ export class GatewayService {
   ipfsCluster: IpfsCluster
   activity: ActivityService
   scoring: ScoringService
+  ipfsClusterUrl: string
 
   constructor(self) {
     this.self = self
@@ -40,6 +41,8 @@ export class GatewayService {
     this.askJob = this.askJob.bind(this)
     this.runReassign = this.runReassign.bind(this)
     this.runUploadingCheck = this.runUploadingCheck.bind(this)
+
+    this.ipfsClusterUrl = "http://localhost:9094"; //TODO: use config file or env variables
   }
 
   async stats() {

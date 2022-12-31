@@ -1,5 +1,6 @@
 import moment from "moment";
 import { encoderContainer } from ".."
+import { peerList } from "../../common/utils";
 import {JobReason, JobStatus} from '../../modules/encoder.model'
 
 class JobInfo {
@@ -145,7 +146,10 @@ export const Resolvers = {
         return await encoderContainer.self.gateway.scoring.nodeScore(args.node_id)
     },
     async ipfsBootstrap() {
-        const peers = await encoderContainer.self.gateway.ipfsCluster.peers.ls()
+       
+        const peers = await peerList({
+            url: encoderContainer.self.gateway.ipfsClusterUrl
+        })
         
         let outPeers = []
         for(let peer of Object.values<any>(peers)) {

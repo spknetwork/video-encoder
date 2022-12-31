@@ -34,3 +34,60 @@ export async function IpfsClusterPinAdd(cid, options) {
       params: encodePinOptions(options)
   })).data;
 }
+
+/**
+ * @param {any} data
+ * @returns {API.ClusterInfo}
+ */
+ const toClusterInfo = ({
+  id,
+  addresses,
+  version,
+  commit,
+  peername: peerName,
+  rpc_protocol_version: rpcProtocolVersion,
+  cluster_peers: clusterPeers,
+  cluster_peers_addresses: clusterPeersAddresses,
+  ipfs,
+  error
+}) => ({
+  id,
+  addresses,
+  version,
+  commit,
+  peerName,
+  rpcProtocolVersion,
+  clusterPeers,
+  clusterPeersAddresses,
+  ipfs,
+  error
+})
+
+
+/**
+ * @param {API.Config} cluster
+ * @param {API.RequestOptions} [options]
+ * @returns {Promise<API.ClusterInfo[]>}
+ */
+ export const peerList = async (cluster, options = {} as any) => {
+  const response = await Axios.get(`${cluster.url}/peers`, {
+      headers: {Authorization: `Bearer ${options.token}`}, 
+      responseType: 'stream'
+  });
+
+const stream = response.data;
+
+// stream.on('data', data => {
+//     console.log(data);
+// });
+
+// stream.on('end', () => {
+//     console.log("stream done");
+// });
+  let infos = []
+  for await (const d of stream) {
+    // console.log(JSON.parse(d.toString()))
+    infos.push(toClusterInfo(JSON.parse(d.toString())))
+  }
+  return infos
+}
