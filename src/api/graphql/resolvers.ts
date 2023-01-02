@@ -146,7 +146,10 @@ export const Resolvers = {
         }
     },
     async scoreMap() {
-        return await encoderContainer.self.gateway.scoring.scoreMap()
+        const scoreMap = await encoderContainer.self.gateway.scoring.scoreMap()
+        return scoreMap.sort((a, b) => {
+            return b.byte_rate - a.byte_rate
+        })
     },
     async nodeScore(args: any) {
         return await encoderContainer.self.gateway.scoring.nodeScore(args.node_id)
