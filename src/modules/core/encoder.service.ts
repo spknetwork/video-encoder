@@ -134,20 +134,28 @@ export class EncoderService {
     this.updateSubscriptions = new Set()
   }
 
-  async updateJob(streamId, updateData) {
+  async updateJob(job_id, updateData) {
     try {
-      const tileDoc = await TileDocument.load(this.self.ceramic, streamId)
-      const content = tileDoc.content
-      console.log(streamId)
-      console.log(content)
-      for (let [key, value] of Object.entries(updateData)) {
-        content[key] = value
-      }
-      content['updated_at'] = new Date().toISOString()
-      await tileDoc.update(content)
+      // const tileDoc = await TileDocument.load(this.self.ceramic, streamId)
+      // const content = tileDoc.content
+      await this.pouch.upsert(job_id, (doc) => {
+        console.log('updateData - 141', updateData)
+        for (let [key, value] of Object.entries(updateData)) {
+          doc[key] = value
+        }
+        doc['updated_at'] = new Date().toISOString()
+        
+        return doc;
+      })
+      const docNew = await this.pouch.get(job_id)
+      // for (let [key, value] of Object.entries(updateData)) {
+      //   content[key] = value
+      // }
+      // content['updated_at'] = new Date().toISOString()
+      // await tileDoc.update(content)
       this.events.emit('job.status_update', {
-        content,
-        streamId,
+        content: docNew,
+        streamId: docNew.streamId,
       })
     } catch (ex) {
       console.log(ex)
@@ -252,7 +260,7 @@ export class EncoderService {
       .addOption('-f', 'segment')
     //command.output(path.join(workfolder, "480p/index.m3u8")).outputFormat("hls")
 
-    this.updateJob(streamId, {
+    this.updateJob(jobInfo.id, {
       status: EncodeStatus.RUNNING,
     })
 
@@ -275,7 +283,7 @@ export class EncoderService {
           const progressPct =
             (stage / jobInfo.profiles.length + progress.percent / 100 / jobInfo.profiles.length) *
             100
-          this.events.emit('job.progress', streamId.toString(), {
+          this.events.emit('job.progress', jobInfo.id.toString(), {
             stage,
             stages: jobInfo.profiles.length,
             progress,
@@ -337,7 +345,7 @@ export class EncoderService {
     fs.writeFileSync(Path.join(workfolder, 'manifest.m3u8'), manifest)
 
     try {
-      this.updateJob(streamId, {
+      await this.updateJob(jobInfo.id, {
         status: EncodeStatus.UPLOADING,
       })
       const ipfsHash = await this.self.ipfs.add(globSource(workfolder, '**'), {
@@ -347,9 +355,9 @@ export class EncoderService {
       
       fs.rmSync(workfolder, {recursive: true, force: true})
       fs.rmSync(downloadFolder, {recursive: true, force: true})
-      console.log('ERROR ', workfolder)
+      console.log('ERROR ', workfolder, ipfsHash.cid.toString())
 
-      this.updateJob(streamId, {
+      await this.updateJob(jobInfo.id, {
         status: EncodeStatus.COMPLETE,
         outCid: ipfsHash.cid.toString(),
         total_size: ipfsHash.size,
@@ -357,7 +365,7 @@ export class EncoderService {
       return ipfsHash.cid.toString()
     } catch (ex) {
       console.log(ex)
-      this.updateJob(streamId, {
+      this.updateJob(jobInfo.id, {
         status: EncodeStatus.FAILED,
       })
       console.log('ERROR ', workfolder)
@@ -368,11 +376,14 @@ export class EncoderService {
   async executeJob(jobInfoOrId: Object | string) {
     let jobInfo
     let streamId
+    let jobId
     if (typeof jobInfoOrId === 'string') {
       try {
-        streamId = StreamID.fromString(jobInfoOrId)
-        jobInfo = (await TileDocument.load(this.self.ceramic, streamId)).content
-      } catch {
+        // streamId = StreamID.fromString(jobInfoOrId)
+        //jobInfo = (await TileDocument.load(this.self.ceramic, streamId)).content
+        jobInfo = await this.pouch.get(jobInfoOrId)
+      } catch (ex) {
+        console.log(ex)
         throw new Error('Error not streamId')
       }
     } else if (typeof jobInfoOrId === 'object') {
@@ -415,46 +426,50 @@ export class EncoderService {
   async cleanUpJob() {}
   async createJob(url, peerId?, client_id?) {
     const id = uuid()
+    const initialJob = {
+      id,
+      client_peerid: peerId,
+      client_id: client_id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      peerid: (await this.self.ipfs.id()).id,
+      input: {
+        url,
+      },
+      profiles: [
+        {
+          name: '1080p',
+          size: '?x1080',
+        },
+        {
+          name: '720p',
+          size: '?x720',
+        },
+        {
+          name: '480p',
+          size: '?x480',
+        },
+      ],
+      output: [],
+      status: EncodeStatus.PENDING,
+      original_size: -1,
+      total_size: -1,
+    }
     const tileDocument = await TileDocument.create(
       this.self.ceramic,
-      {
-        id,
-        client_peerid: peerId,
-        client_id: client_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        peerid: (await this.self.ipfs.id()).id,
-        input: {
-          url,
-        },
-        profiles: [
-          {
-            name: '1080p',
-            size: '?x1080',
-          },
-          {
-            name: '720p',
-            size: '?x720',
-          },
-          {
-            name: '480p',
-            size: '?x480',
-          },
-        ],
-        output: [],
-        status: EncodeStatus.PENDING,
-        original_size: -1,
-        total_size: -1,
-      },
+      initialJob,
       {},
       {
         anchor: true,
         publish: false,
       },
     )
-    //todo store in database
+    
 
-    this.pouch.upsert(id, (doc) => {
+    await this.pouch.upsert(initialJob.id, (doc) => {
+      for(let key in initialJob) {
+        doc[key] = initialJob[key]
+      }
       doc['streamId'] = tileDocument.id.toString()
       doc['status'] = EncodeStatus.PENDING
       doc['progress'] = 0

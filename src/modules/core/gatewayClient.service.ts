@@ -61,6 +61,7 @@ export class GatewayClient {
         const eventListenr = async (jobUpdate) => {
           console.log(jobUpdate)
 
+          console.log(jobUpdate.content.status, JobStatus.COMPLETE, jobUpdate.streamId.toString(), job.streamId)
           //Make sure the event is not destine for another job
           if (jobUpdate.streamId.toString() === job.streamId) {
             console.log(`Current Status: ${job.streamId} ${jobUpdate.content.status}`)
@@ -91,7 +92,7 @@ export class GatewayClient {
         
         
         try {
-          await this.self.encoder.executeJob(job.streamId)
+          await this.self.encoder.executeJob(job.id)
         } catch(ex) {
           console.log('failing job ' + job.id)
           await this.failJob(job.id)
@@ -191,10 +192,11 @@ export class GatewayClient {
     if (this.self.config.get('remote_gateway.enabled')) {
       console.log(`${Math.round(Math.random() * (60 + 1))} * * * * *`)
       NodeSchedule.scheduleJob(`${Math.round(Math.random() * (60 + 1))} * * * * *`, this.getNewJobs)
-
+      
       this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
       
       await this.ipfsBootstrap()
+      this.getNewJobs()
 
       setTimeout(async() => {
         try {
