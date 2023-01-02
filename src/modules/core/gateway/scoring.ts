@@ -64,7 +64,7 @@ export class ScoringService {
     for (let node_id of assignedList) {
       const jobActivity = await this.gateway.activity.activity.distinct('job_id', {
         assigned_to: node_id,
-        previous_status: { $in: ['assigned', 'running'] },
+        previous_status: { $in: ['assigned', 'running', 'uploading'] },
         status: 'queued',
         date: { $gt: new Date(moment().subtract(7, 'day').toISOString()) },
       })
