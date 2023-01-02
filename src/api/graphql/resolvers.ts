@@ -131,12 +131,18 @@ export const Resolvers = {
                     reason: JobReason.JOB_AVAILABLE,
                     job: jobOut
                 }
+            } else if(queuedJobs.length > 0) {
+                return {
+                    reason: JobReason.RANK_REQUIREMENT,
+                    job: null
+                }
+            } else {
+                return {
+                    reason: JobReason.NO_JOBS,
+                    job: null
+                }
             }
             
-            return {
-                reason: JobReason.RANK_REQUIREMENT,
-                job: null
-            }
         }
     },
     async scoreMap() {
@@ -163,6 +169,10 @@ export const Resolvers = {
         }
     },
     async gatewayStats() {
+        /**
+         * Gets all reassignment events over the last day
+         * Includes duplicate jobs
+         */
         const queueLagRecords = await encoderContainer.self.gateway.activity.activity.find({
             previous_status: 'queued',
             status: "assigned",
