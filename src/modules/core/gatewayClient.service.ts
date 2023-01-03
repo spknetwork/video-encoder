@@ -23,23 +23,23 @@ export class GatewayClient {
     this.activeJobs = {}
   }
 
-  async queueJob(jobInfo) {
-    console.log(jobInfo)
+  async queueJob(remoteJob) {
+    console.log(remoteJob)
     try {
       //Asks gateway to accept the job
       const { data } = await Axios.post(`${this.apiUrl}/api/v0/gateway/acceptJob`, {
         jws: await this.self.identityService.identity.createJWS({
           action: 'accept',
-          job_id: jobInfo.id,
+          job_id: remoteJob.id,
         }),
       })
-      const job_id = jobInfo.id
+      const job_id = remoteJob.id
       console.log(data)
 
       //Notes the job so it can be removed if neede when the daemon stops/restart
-      this.activeJobs[job_id] = jobInfo;
+      this.activeJobs[job_id] = remoteJob;
 
-      const job = await this.self.encoder.createJob(jobInfo.input.uri); //Creates an internal job
+      const job = await this.self.encoder.createJob(remoteJob.input.uri); //Creates an internal job
       console.log(job)
 
       let pid;
@@ -92,10 +92,11 @@ export class GatewayClient {
         
         
         try {
+          //TODO: Probably should redo the whole remote and local job ID thing
           await this.self.encoder.executeJob(job.id)
         } catch(ex) {
-          console.log('failing job ' + job.id)
-          await this.failJob(job.id)
+          console.log('failing job ' + job_id)
+          await this.failJob(job_id)
           clearInterval(pid)
           console.log(ex)
         }
@@ -196,7 +197,6 @@ export class GatewayClient {
       this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
       
       await this.ipfsBootstrap()
-      this.getNewJobs()
 
       setTimeout(async() => {
         try {
