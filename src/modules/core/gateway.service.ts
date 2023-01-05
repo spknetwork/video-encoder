@@ -385,6 +385,7 @@ export class GatewayService {
           assigned_date: null,
           assigned_to: null,
           last_pinged: null,
+          pinning_at: null
         },
       })
     }
@@ -403,6 +404,7 @@ export class GatewayService {
       console.log(pinStatus)
       let uploaded = false
       let pinning = false
+      let pinQueued = false;
       for (let mapEntry of Object.values(pinStatus.peer_map) as any[]) {
         if (mapEntry.status === 'pinned') {
           uploaded = true
@@ -417,7 +419,9 @@ export class GatewayService {
           new_status: JobStatus.COMPLETE,
           assigned_to: job.assigned_to,
         })
-        await this.jobs.findOneAndUpdate(job, {
+        await this.jobs.findOneAndUpdate({
+          _id: job._id
+        }, {
           $set: {
             status: JobStatus.COMPLETE,
             completed_at: new Date(),
@@ -429,7 +433,16 @@ export class GatewayService {
           replicationFactorMin: 2,
           replicationFactorMax: 3,
         })
+      } else {
+        await this.jobs.findOneAndUpdate({
+          _id: job._id
+        }, {
+          $set: {
+            pinning_at: new Date()
+          }
+        })
       }
+      
       console.log(`${job.id}: ${uploaded}`)
     }
   }

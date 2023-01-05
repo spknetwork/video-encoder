@@ -99,7 +99,6 @@ export class ScoringService {
         assigned_to: node_id,
       })
 
-      console.log(weightedSum, list.length)
       const byte_rate = Number((weightedSum / list.length).toFixed()) || 0
       aggregate_byte_rate = aggregate_byte_rate + byte_rate
       testOut.push({
