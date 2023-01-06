@@ -365,7 +365,7 @@ export class GatewayService {
         },
         {
           status: { $eq: JobStatus.UPLOADING },
-          pinning_at: {$lt: moment().subtract('10', 'minutes')} //Adjust as necessary over time.
+          pinning_at: {$lt: moment().subtract('10', 'minutes').toDate()} //Adjust as necessary over time.
         },
       ],
     })
