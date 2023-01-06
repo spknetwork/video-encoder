@@ -21,6 +21,7 @@ import { IpfsClusterPinAdd } from '../../common/utils'
 import { ActivityService } from './oplog.service'
 import { ScoringService } from './gateway/scoring'
 import Axios from 'axios'
+import moment from 'moment'
 
 export class GatewayService {
   self: CoreService
@@ -364,7 +365,7 @@ export class GatewayService {
         },
         {
           status: { $eq: JobStatus.UPLOADING },
-          last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 1) },
+          pinning_at: {$lt: moment().subtract('10', 'minutes')} //Adjust as necessary over time.
         },
       ],
     })
