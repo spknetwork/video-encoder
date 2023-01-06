@@ -413,6 +413,9 @@ export class GatewayService {
         if (mapEntry.status === 'pinning') {
           pinning = true
         }
+        if(mapEntry.status === "pin_queued") {
+          pinQueued = true;
+        }
       }
       if (uploaded) {
         await this.activity.changeState({
@@ -429,14 +432,17 @@ export class GatewayService {
           },
         })
       } else if (!pinning) {
-        await IpfsClusterPinAdd(cid, {
-          metadata: job.storageMetadata,
-          replicationFactorMin: 2,
-          replicationFactorMax: 3,
-        })
+        if(!pinQueued) {
+          await IpfsClusterPinAdd(cid, {
+            metadata: job.storageMetadata,
+            replicationFactorMin: 2,
+            replicationFactorMax: 3,
+          })
+        }
       } else {
         await this.jobs.findOneAndUpdate({
-          _id: job._id
+          _id: job._id,
+          pinning_at: null
         }, {
           $set: {
             pinning_at: new Date()
