@@ -61,7 +61,7 @@ export class ActivityService {
         }
 
         let old_job;
-        if(jobInfo.created_at < moment().subtract("30", 'day')) {
+        if(jobInfo.created_at < moment().subtract("30", 'day').toDate()) {
             old_job = true;
         } else {
             old_job = false
