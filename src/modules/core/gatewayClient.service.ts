@@ -61,7 +61,7 @@ export class GatewayClient {
         const eventListenr = async (jobUpdate) => {
           console.log(jobUpdate)
 
-          console.log(jobUpdate.content.status, JobStatus.COMPLETE, jobUpdate.streamId.toString(), job.streamId)
+          // console.log(jobUpdate.content.status, JobStatus.COMPLETE, jobUpdate.streamId.toString(), job.streamId)
           //Make sure the event is not destine for another job
           if (jobUpdate.streamId.toString() === job.streamId) {
             console.log(`Current Status: ${job.streamId} ${jobUpdate.content.status}`)
