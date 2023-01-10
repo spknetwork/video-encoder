@@ -181,6 +181,9 @@ export const Resolvers = {
             status: "assigned",
             date: {
                 $gt: moment().subtract('1', 'day').toDate()
+            },
+            old_job: {
+                $ne: true
             }
         }).toArray()
 

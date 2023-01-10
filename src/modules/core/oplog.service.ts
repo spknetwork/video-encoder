@@ -1,3 +1,4 @@
+import moment from "moment";
 import { Collection } from "mongodb";
 import { CoreService } from "./core.service";
 
@@ -12,7 +13,7 @@ interface Activity {
 
     assigned_to: string;
 
-    state: any
+    old_job: boolean
     meta: any
 }
 
@@ -58,6 +59,13 @@ export class ActivityService {
         } else {
             previous_status = jobInfo.status
         }
+
+        let old_job;
+        if(jobInfo.created_at < moment().subtract("30", 'day')) {
+            old_job = true;
+        } else {
+            old_job = false
+        }
         
         const new_op = {
             job_id: args.job_id,
@@ -69,7 +77,7 @@ export class ActivityService {
 
             meta: args.meta,
 
-            state: args.state,
+            old_job,
             assigned_to: args.assigned_to
         }
         await this.activity.insertOne(new_op)
