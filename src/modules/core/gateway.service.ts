@@ -187,7 +187,7 @@ export class GatewayService {
               last_pinged: null,
             },
             $inc: {
-              reassign_count: 1
+              attempt_count: 1
             }
           },
         )
