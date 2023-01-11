@@ -45,6 +45,10 @@ export const Resolvers = {
         const queuedJobs = await encoderContainer.self.gateway.jobs.find(
             {
               status: JobStatus.QUEUED,
+              attempt_count: {
+                //TODO: do proper dequeueing and marking as failed
+                $lt: 5
+              }
             },
             {
               sort: {
