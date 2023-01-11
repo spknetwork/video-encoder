@@ -186,6 +186,9 @@ export class GatewayService {
               assigned_to: null,
               last_pinged: null,
             },
+            $inc: {
+              reassign_count: 1
+            }
           },
         )
       }
