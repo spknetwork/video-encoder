@@ -14,6 +14,7 @@ import PouchdbUpsert from 'pouchdb-upsert'
 import { EncodeStatus } from '../encoder.model'
 import URL from 'url'
 import Downloader from 'nodejs-file-downloader'
+import execa from 'execa'
 PouchDB.plugin(PouchdbFind)
 PouchDB.plugin(PouchdbUpsert)
 
@@ -182,6 +183,8 @@ export class EncoderService {
         return doc
       })
     }, 500)
+    // const stdout = await execa('wget', [sourceUrl, '-O', Path.join(downloadFolder, `${jobInfo.id}_src.mp4`)])
+    // console.log(stdout)
     const downloader = new Downloader({
       url: sourceUrl,
       directory: downloadFolder,
@@ -455,29 +458,33 @@ export class EncoderService {
       original_size: -1,
       total_size: -1,
     }
-    const tileDocument = await TileDocument.create(
-      this.self.ceramic,
-      initialJob,
-      {},
-      {
-        anchor: true,
-        publish: false,
-      },
-    )
+    // const tileDocument = await TileDocument.create(
+    //   this.self.ceramic,
+    //   initialJob,
+    //   {},
+    //   {
+    //     anchor: true,
+    //     publish: false,
+    //   },
+    // )
+
+    // const fakeStreamId = id
     
 
     await this.pouch.upsert(initialJob.id, (doc) => {
       for(let key in initialJob) {
         doc[key] = initialJob[key]
       }
-      doc['streamId'] = tileDocument.id.toString()
+      // doc['streamId'] = tileDocument.id.toString()
+      doc['streamId'] = id
+      
       doc['status'] = EncodeStatus.PENDING
       doc['progress'] = 0
       return doc
     })
     return {
       id,
-      streamId: tileDocument.id.toString(),
+      streamId: id,
     }
   }
   async start() {

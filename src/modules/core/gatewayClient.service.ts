@@ -17,6 +17,7 @@ export class GatewayClient {
     this.self = self
 
     this.getNewJobs = this.getNewJobs.bind(this)
+    this.ipfsBootstrap = this.ipfsBootstrap.bind(this)
 
     this.jobQueue = new PQueue({ concurrency: queue_concurrency })
 
@@ -26,25 +27,25 @@ export class GatewayClient {
   async queueJob(remoteJob) {
     console.log(remoteJob)
     try {
-      //Asks gateway to accept the job
-      const { data } = await Axios.post(`${this.apiUrl}/api/v0/gateway/acceptJob`, {
-        jws: await this.self.identityService.identity.createJWS({
-          action: 'accept',
-          job_id: remoteJob.id,
-        }),
-      })
-      const job_id = remoteJob.id
-      console.log(data)
-
-      //Notes the job so it can be removed if neede when the daemon stops/restart
-      this.activeJobs[job_id] = remoteJob;
-
-      const job = await this.self.encoder.createJob(remoteJob.input.uri); //Creates an internal job
-      console.log(job)
-
-      let pid;
-      //Adds job to the queue.
       this.jobQueue.add(async () => {
+        //Asks gateway to accept the job
+        const { data } = await Axios.post(`${this.apiUrl}/api/v0/gateway/acceptJob`, {
+          jws: await this.self.identityService.identity.createJWS({
+            action: 'accept',
+            job_id: remoteJob.id,
+          }),
+        })
+        const job_id = remoteJob.id
+        console.log(data)
+
+        //Notes the job so it can be removed if neede when the daemon stops/restart
+        this.activeJobs[job_id] = remoteJob;
+
+        const job = await this.self.encoder.createJob(remoteJob.input.uri); //Creates an internal job
+        console.log(job)
+
+        let pid;
+        //Adds job to the queue.
 
         //Ping interval
         pid = setInterval(async () => {
@@ -191,10 +192,11 @@ export class GatewayClient {
 
   async start() {
     if (this.self.config.get('remote_gateway.enabled')) {
+      this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
       console.log(`${Math.round(Math.random() * (60 + 1))} * * * * *`)
       NodeSchedule.scheduleJob(`${Math.round(Math.random() * (60 + 1))} * * * * *`, this.getNewJobs)
+      NodeSchedule.scheduleJob(`${Math.round(Math.random() * (60 + 1))} * * * * *`, this.ipfsBootstrap)
       
-      this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
       
       await this.ipfsBootstrap()
 
