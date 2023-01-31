@@ -1,5 +1,6 @@
 import moment from "moment";
 import { Collection } from "mongodb";
+import { IpfsClusterPinRm } from "../../common/utils";
 import { CoreService } from "./core.service";
 
 interface Activity {
@@ -58,6 +59,16 @@ export class ActivityService {
             previous_status = action.status
         } else {
             previous_status = jobInfo.status
+        }
+
+        if(previous_status === "uploading") {
+            try {
+                await IpfsClusterPinRm(jobInfo.result.cid, {
+                    
+                })
+            } catch {
+
+            }
         }
 
         let old_job;

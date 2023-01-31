@@ -34,6 +34,11 @@ export async function IpfsClusterPinAdd(cid, options) {
       params: encodePinOptions(options)
   })).data;
 }
+export async function IpfsClusterPinRm(cid, options) {
+  return (await Axios.delete(`http://localhost:9094/pins/${cid}`, {
+      headers: encodePinOptions(options) as any
+  })).data;
+}
 
 /**
  * @param {any} data
