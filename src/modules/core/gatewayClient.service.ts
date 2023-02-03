@@ -18,6 +18,7 @@ export class GatewayClient {
 
     this.getNewJobs = this.getNewJobs.bind(this)
     this.ipfsBootstrap = this.ipfsBootstrap.bind(this)
+    this.encoderUnpinCheck = this.encoderUnpinCheck.bind(this)
 
     this.jobQueue = new PQueue({ concurrency: queue_concurrency })
 
@@ -25,18 +26,22 @@ export class GatewayClient {
   }
 
   async queueJob(remoteJob) {
-    console.log(remoteJob)
     try {
       this.jobQueue.add(async () => {
         //Asks gateway to accept the job
-        const { data } = await Axios.post(`${this.apiUrl}/api/v0/gateway/acceptJob`, {
-          jws: await this.self.identityService.identity.createJWS({
-            action: 'accept',
-            job_id: remoteJob.id,
-          }),
-        })
+        try {
+          const { data } = await Axios.post(`${this.apiUrl}/api/v0/gateway/acceptJob`, {
+            jws: await this.self.identityService.identity.createJWS({
+              action: 'accept',
+              job_id: remoteJob.id,
+            }),
+          })
+          console.log(data)
+        } catch {
+          //If job was already stolen. 
+          return;
+        }
         const job_id = remoteJob.id
-        console.log(data)
 
         //Notes the job so it can be removed if neede when the daemon stops/restart
         this.activeJobs[job_id] = remoteJob;
@@ -77,6 +82,13 @@ export class GatewayClient {
                     cid: jobUpdate.content.outCid,
                   },
                 }),
+              })
+
+              await this.self.encoder.pouch.upsert('pin-allocation', (doc) => {
+                doc[job_id] = {
+                  cid: jobUpdate.content.outCid
+                }
+                return doc;
               })
               this.ipfsBootstrap().catch((e) => {
                 console.log(e)
@@ -190,12 +202,60 @@ export class GatewayClient {
     }
   }
 
+  async encoderUnpinCheck() {
+    console.log(`[GC] Running unpin cycle`)
+    try {
+      const doc:Record<string, {cid: string}> = await this.self.encoder.pouch.get('pin-allocation')
+      console.log(doc)
+      for(let [job_id, docData] of Object.entries(doc)) {
+        const { data } = await Axios.post(`${this.apiUrl}/v1/graphql`, {
+          query: `
+          query QueryJobInfo($job_id: String) {
+            jobInfo(job_id:$job_id) {
+              id
+              status
+            }
+          }
+          `,
+          variables: {
+            job_id: job_id
+          }
+        })
+        const jobInfo = data.data.jobInfo
+        
+
+        console.log(jobInfo)
+        if(jobInfo.status === "complete") {
+          console.log(`[GC] Unpinning ${docData.cid} from ${job_id}`)
+          try {
+            await this.self.ipfs.pin.rm(docData.cid)
+          } catch {
+            //If not pinned
+          }
+          await this.self.encoder.pouch.upsert('pin-allocation', (doc) => {
+            delete doc[job_id]
+            return doc;
+          })
+        }
+      }
+    } catch(ex) {
+      // console.log(ex)
+    }
+    console.log('[GC] Running IPFS GC')
+    for await(let gcResult of this.self.ipfs.repo.gc()) {
+      // console.log(gcResult)
+      //Don't log here unless you want spam
+    }
+    console.log('[GC] IPFS GC complete')
+  }
+
   async start() {
     if (this.self.config.get('remote_gateway.enabled')) {
       this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
       console.log(`${Math.round(Math.random() * (60 + 1))} * * * * *`)
       NodeSchedule.scheduleJob(`${Math.round(Math.random() * (60 + 1))} * * * * *`, this.getNewJobs)
       NodeSchedule.scheduleJob(`${Math.round(Math.random() * (60 + 1))} * * * * *`, this.ipfsBootstrap)
+      NodeSchedule.scheduleJob(`0 * * * *`, this.encoderUnpinCheck); //Garbage collect every hour
       
       
       await this.ipfsBootstrap()
