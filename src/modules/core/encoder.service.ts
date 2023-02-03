@@ -183,34 +183,53 @@ export class EncoderService {
         return doc
       })
     }, 500)
-    // const stdout = await execa('wget', [sourceUrl, '-O', Path.join(downloadFolder, `${jobInfo.id}_src.mp4`)])
+    const downloadProcess = execa('wget', [sourceUrl, '-O', Path.join(downloadFolder, `${jobInfo.id}_src.mp4`)], {
+      // on
+    })
+
+    if(downloadProcess.stderr) {
+      //   downloadProgress.stderr.pipe(process.stdout)
+        for await(let chunk of downloadProcess.stderr) {
+          const outArray = chunk.toString().split(' ')
+          // console.log(outArray)
+          const percentage = outArray.find(e => e.includes('%'));
+          if(percentage) {
+              const pctArray = percentage.split('%')
+              if(Number(pctArray[0]) !== 0) {
+                  // console.log(pctArray[0])
+                  download_pct = Number(pctArray[0])
+              }
+          }
+        }
+    }
+    await downloadProcess
     // console.log(stdout)
-    const downloader = new Downloader({
-      url: sourceUrl,
-      directory: downloadFolder,
-      fileName: `${jobInfo.id}_src.mp4`,
-      maxAttempts: 6, //Default is 1.
-      onError: function (error) {
-        //You can also hook into each failed attempt.
-        console.log("Error from attempt ", error);
-      },
-      onProgress: (inputPercentage, chunk, remainingSize) => {
-        //Gets called with each chunk.
-        download_pct = Number(inputPercentage);
-      },
-    });
+    // const downloader = new Downloader({
+    //   url: sourceUrl,
+    //   directory: downloadFolder,
+    //   fileName: `${jobInfo.id}_src.mp4`,
+    //   maxAttempts: 6, //Default is 1.
+    //   onError: function (error) {
+    //     //You can also hook into each failed attempt.
+    //     console.log("Error from attempt ", error);
+    //   },
+    //   onProgress: (inputPercentage, chunk, remainingSize) => {
+    //     //Gets called with each chunk.
+    //     download_pct = Number(inputPercentage);
+    //   },
+    // });
     
     let srcVideo = Path.join(downloadFolder, `${jobInfo.id}_src.mp4`);
-    try {
-      await downloader.download();
-      clearInterval(slowUpdate)
-    } catch (error) {
-      //If all attempts fail, the last error is thrown.
-      console.log("Final fail", error);
-      fs.rmdirSync(downloadFolder)
-      clearInterval(slowUpdate)
-      throw error;
-    }
+    // try {
+    //   await downloader.download();
+    //   clearInterval(slowUpdate)
+    // } catch (error) {
+    //   //If all attempts fail, the last error is thrown.
+    //   console.log("Final fail", error);
+    //   fs.rmdirSync(downloadFolder)
+    //   clearInterval(slowUpdate)
+    //   throw error;
+    // }
     console.log(`Downloaded to `, srcVideo, `in ${new Date().getTime() - startTime.getTime()}ms`)
 
     var command = ffmpeg(srcVideo)
