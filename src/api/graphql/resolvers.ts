@@ -243,5 +243,16 @@ export const Resolvers = {
             completeLag: Math.round(completeLag / 1000),
             averageByteRate: Math.round(averageByteRate)
         }
+    },
+    async jobInfo(args) {
+        const jobInfo = await encoderContainer.self.gateway.jobs.findOne({
+            id: args.job_id
+        })
+
+        if(!jobInfo) {
+            return null;
+        }
+
+        return jobInfo
     }
 }

@@ -45,6 +45,7 @@ export const schema = `
         nodeScore(node_id: String): JSON
         ipfsBootstrap: JSON
         gatewayStats: GatewayStats
+        jobInfo(job_id: String): Job
     }
 
 `
