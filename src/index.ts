@@ -1,14 +1,15 @@
-import CeramicHTTP from '@ceramicnetwork/http-client'
+import {CeramicClient} from '@ceramicnetwork/http-client'
 import { onShutdown } from "node-graceful-shutdown";
 import { ConfigService } from './config.service'
-import IPFSHTTP from 'ipfs-http-client'
+// import IPFSHTTP from 'ipfs-http-client'
 import { CoreService } from './modules/core/core.service'
 import {EncoderApiModule} from './api/index'
 
 let instance: CoreService;
 async function startup(): Promise<void> {
+  
   // init ceramic
-  const ceramic = new CeramicHTTP(ConfigService.getConfig().ceramicHost) //Using the public node for now.
+  const ceramic = new CeramicClient(ConfigService.getConfig().ceramicHost) //Using the public node for now.
 
 
   instance = new CoreService(ceramic)

@@ -14,7 +14,7 @@ import PouchdbUpsert from 'pouchdb-upsert'
 import { EncodeStatus, GatewayJob, GatewayWorkerInfo, JobStatus } from '../encoder.model'
 import NodeSchedule from 'node-schedule'
 import { MongoClient, Db, Collection } from 'mongodb'
-import PQueue from 'p-queue'
+import {default as PQueue} from 'p-queue'
 //import { Cluster } from '@nftstorage/ipfs-cluster'
 import IpfsCluster from 'ipfs-cluster-api'
 import { IpfsClusterPinAdd } from '../../common/utils'
@@ -22,6 +22,7 @@ import { ActivityService } from './oplog.service'
 import { ScoringService } from './gateway/scoring'
 import Axios from 'axios'
 import moment from 'moment'
+
 
 export class GatewayService {
   self: CoreService

@@ -14,22 +14,22 @@ services:
       - spk-video-encoder
     environment:
       IPFS_HOST: ipfs:5001
-    ports:
-      - "4001:4001"
     volumes:
       - ./data/video-encoder:/root/.spk-encoder
   ipfs:
     container_name: ipfs2
-    image: ipfs/go-ipfs:latest
+    image: ipfs/kubo:v0.18.1
     command:
       - daemon
       - --enable-pubsub-experiment
     networks:
       - spk-video-encoder
+    ports:
+      - "4001:4001"
     environment: 
       IPFS_PATH: /etc/ipfs
     volumes:
-      - ./data/ipfs:/etc/ipfs
+      - ./data/ipfs-2:/etc/ipfs
       
 networks:
   spk-video-encoder:
