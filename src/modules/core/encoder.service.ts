@@ -370,10 +370,13 @@ export class EncoderService {
       await this.updateJob(jobInfo.id, {
         status: EncodeStatus.UPLOADING,
       })
-      const ipfsHash = await this.self.ipfs.add(globSource(workfolder, '**'), {
+      let ipfsHash;
+      for await(let addResult of this.self.ipfs.addAll(globSource(workfolder, '**'), {
         pin: false,
         wrapWithDirectory: true,
-      })
+      })) {
+        ipfsHash = addResult;
+      }
       
       fs.rmSync(workfolder, {recursive: true, force: true})
       fs.rmSync(downloadFolder, {recursive: true, force: true})
