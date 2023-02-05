@@ -171,7 +171,7 @@ export class GatewayService {
         await this.activity.changeState({
           job_id: job_id,
           new_status: JobStatus.QUEUED,
-          assigned_to: null,
+          assigned_to: jobInfo.assigned_to,
           meta: {
             reason: 'rejected',
           },
