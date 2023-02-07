@@ -156,6 +156,9 @@ export class Config {
         enabled: true,
         api: "https://encoder-gateway.infra.3speak.tv"
       },
+      discordbot: {
+        token: null
+      }
     }
 
     this.config = config || defaultConfig

@@ -15,6 +15,7 @@ import os from 'os'
 import path from 'path'
 import { IdentityService } from './identity.service'
 import { GatewayClient } from './gatewayClient.service'
+import { DiscordBot } from './misc/discordbot.service'
 
 const idxAliases = {
   rootPosts: 'ceramic://kjzl6cwe1jw147fikhkjs9qysmv6dkdsu5i6zbgk4x9p47gt9uedru1755y76dg',
@@ -28,6 +29,7 @@ export class CoreService {
   config: Config
   identityService: IdentityService
   gatewayClient: GatewayClient
+  discordBot: DiscordBot
 
   constructor(readonly ceramic: CeramicClient) {
     this.encoder = new EncoderService(this)
@@ -58,6 +60,9 @@ export class CoreService {
 
     this.gatewayClient = new GatewayClient(this)
     await this.gatewayClient.start()
+
+    this.discordBot = new DiscordBot(this)
+    await this.discordBot.start()
   }
 
   async stop() {
