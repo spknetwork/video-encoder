@@ -42,6 +42,7 @@ export class GatewayService {
 
     this.askJob = this.askJob.bind(this)
     this.runReassign = this.runReassign.bind(this)
+    this.runJobTimeout = this.runJobTimeout.bind(this)
     this.runUploadingCheck = this.runUploadingCheck.bind(this)
 
     this.ipfsClusterUrl = "http://localhost:9094"; //TODO: use config file or env variables
@@ -395,6 +396,18 @@ export class GatewayService {
       })
     }
   }
+
+  async runJobTimeout() {
+    await this.jobs.updateMany({
+      status: "queued",
+      attempt_count: {$gte: 5}
+    }, {
+      $set: {
+        status: 'failed'
+      }
+    })
+  }
+
   async runUploadingCheck() {
     const jobs = await this.jobs
       .find({
@@ -469,6 +482,7 @@ export class GatewayService {
       this.activity = new ActivityService(this.self)
 
       NodeSchedule.scheduleJob('*/15 * * * *', this.runReassign) // run every 15 mins
+      NodeSchedule.scheduleJob('*/5 * * * *', this.runJobTimeout) // run every 5 mins
       NodeSchedule.scheduleJob('45 * * * * *', this.runUploadingCheck)
       this.scoring = new ScoringService(this)
 
