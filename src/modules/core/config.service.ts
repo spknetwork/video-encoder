@@ -3,7 +3,7 @@ import _get from 'dlv'
 import mergeOptions from 'merge-options'
 import { Key } from 'interface-datastore'
 import { FsDatastore } from 'datastore-fs'
-import fs from 'fs'
+import fs from 'fs/promises'
 
 function obj_set(obj, props, value) {
   if (typeof props == 'string') {
@@ -72,15 +72,15 @@ export class Config {
     this.get = this.get.bind(this)
     this.set = this.set.bind(this)
   }
-  reload() {
-    var buf = fs.readFileSync(this.path).toString()
+  async reload() {
+    var buf = await fs.readFile(this.path).toString()
     var obj = JSON.parse(buf)
     //patch
     this.config = mergeOptions(this.config, obj)
   }
-  save() {
+  async save() {
     var buf = Buffer.from(JSON.stringify(this.config, null, 2))
-    this.datastore.put(new Key('config'), buf)
+    await this.datastore.put(new Key('config'), buf)
   }
   /**
    *
@@ -100,9 +100,9 @@ export class Config {
    * @param {String} key
    * @param {*} value
    */
-  set(key, value) {
+  async set(key, value) {
     obj_set(this.config, key, value)
-    this.save()
+    await this.save()
   }
   async open() {
     if (!(await this.datastore.has(new Key('config')))) {
@@ -162,6 +162,6 @@ export class Config {
     }
 
     this.config = config || defaultConfig
-    this.save()
+    await this.save()
   }
 }
