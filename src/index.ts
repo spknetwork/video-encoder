@@ -8,15 +8,21 @@ import {EncoderApiModule} from './api/index'
 let instance: CoreService;
 async function startup(): Promise<void> {
   
-  // init ceramic
-  const ceramic = new CeramicClient(ConfigService.getConfig().ceramicHost) //Using the public node for now.
-
-
-  instance = new CoreService(ceramic)
-  await instance.start()
-
-  const api = new EncoderApiModule(4005, instance)
-  await api.listen()
+  try {
+    // init ceramic
+    const ceramic = new CeramicClient(ConfigService.getConfig().ceramicHost) //Using the public node for now.
+  
+  
+    instance = new CoreService(ceramic)
+    await instance.start()
+  
+    const api = new EncoderApiModule(4005, instance)
+    await api.listen()
+  } catch (ex) {
+    console.log(ex.message)
+    await instance.stop()
+    process.exit(0)
+  }
 
 }
 

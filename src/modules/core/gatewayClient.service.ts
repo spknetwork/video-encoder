@@ -253,6 +253,15 @@ export class GatewayClient {
     if (this.self.config.get('remote_gateway.enabled')) {
       this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
       console.log(`${Math.round(Math.random() * (60 + 1))} * * * * *`)
+
+      console.log('Startup: Checking if IPFS is running')
+      try {
+        await (await this.self.ipfs.id()).id
+      } catch {
+        throw new Error("IPFS Daemon Not Available. Please run IPFS.")
+      }
+
+
       NodeSchedule.scheduleJob(`${Math.round(Math.random() * (60 + 1))} * * * * *`, this.getNewJobs)
       NodeSchedule.scheduleJob(`${Math.round(Math.random() * (60 + 1))} * * * * *`, this.ipfsBootstrap)
       NodeSchedule.scheduleJob(`0 * * * *`, this.encoderUnpinCheck); //Garbage collect every hour
