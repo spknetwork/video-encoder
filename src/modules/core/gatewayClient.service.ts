@@ -198,7 +198,11 @@ export class GatewayClient {
     const peers = gqlResult.data.ipfsBootstrap.peers;
 
     for(let peer of peers) {
-      await this.self.ipfs.swarm.connect(peer)
+      try {
+        await this.self.ipfs.swarm.connect(peer)
+      } catch {
+
+      }
     }
   }
 
