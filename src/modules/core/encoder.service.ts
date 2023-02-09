@@ -6,7 +6,7 @@ import tmp from 'tmp'
 import ffmpeg from 'fluent-ffmpeg'
 import { globSource } from 'ipfs-http-client'
 import Path from 'path'
-import fs from 'fs'
+import fs from 'fs/promises'
 import EventEmitter from 'events'
 import PouchDB from 'pouchdb'
 import PouchdbFind from 'pouchdb-find'
@@ -342,7 +342,7 @@ export class EncoderService {
       })
 
       ret.videoBitrate(MAX_BIT_RATE[String(profile.size.split('x')[1])])
-      fs.mkdirSync(Path.join(workfolder, `${String(profile.size.split('x')[1])}p`))
+      await fs.mkdir(Path.join(workfolder, `${String(profile.size.split('x')[1])}p`))
 
       //ret.save(path.join(workfolder, `${String(size.split('x')[1])}p`, 'index.m3u8'))
       console.log(Path.join(workfolder, `${String(profile.size.split('x')[1])}p`, 'index.m3u8'))
@@ -364,7 +364,7 @@ export class EncoderService {
     }
 
     var manifest = this._generateManifest(codecData, sizes)
-    fs.writeFileSync(Path.join(workfolder, 'manifest.m3u8'), manifest)
+    await fs.writeFile(Path.join(workfolder, 'manifest.m3u8'), manifest)
 
     try {
       await this.updateJob(jobInfo.id, {
@@ -378,9 +378,9 @@ export class EncoderService {
         ipfsHash = addResult;
       }
       
-      fs.rmSync(workfolder, {recursive: true, force: true})
-      fs.rmSync(downloadFolder, {recursive: true, force: true})
-      console.log('ERROR ', workfolder, ipfsHash.cid.toString())
+      await fs.rm(workfolder, {recursive: true, force: true})
+      await fs.rm(downloadFolder, {recursive: true, force: true})
+      console.log('Removing local temp content', workfolder, ipfsHash.cid.toString())
 
       await this.updateJob(jobInfo.id, {
         status: EncodeStatus.COMPLETE,
@@ -393,9 +393,8 @@ export class EncoderService {
       this.updateJob(jobInfo.id, {
         status: EncodeStatus.FAILED,
       })
-      console.log('ERROR ', workfolder)
-      fs.rmSync(workfolder, {recursive: true, force: true})
-      fs.rmSync(downloadFolder, {recursive: true, force: true})
+      await fs.rm(workfolder, {recursive: true, force: true})
+      await fs.rm(downloadFolder, {recursive: true, force: true})
     }
   }
   async executeJob(jobInfoOrId: Object | string) {
