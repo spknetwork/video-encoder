@@ -69,6 +69,22 @@ export async function IpfsClusterPinRm(cid, options) {
 })
 
 
+const ndjsonParse = async function* (stream) {
+  const matcher = /\r?\n/
+  const decoder = new TextDecoder('utf8')
+  let buffer = ''
+
+  for await(let value of stream) {
+      buffer += decoder.decode(value, { stream: true })
+      const parts = buffer.split(matcher)
+      buffer = parts.pop() || ''
+      for (const part of parts) yield JSON.parse(part)
+  }
+  buffer += decoder.decode(undefined, { stream: false })
+  if (buffer) yield JSON.parse(buffer)
+  
+}
+
 /**
  * @param {API.Config} cluster
  * @param {API.RequestOptions} [options]
@@ -90,9 +106,9 @@ const stream = response.data;
 //     console.log("stream done");
 // });
   let infos = []
-  for await (const d of stream) {
+  for await (const d of ndjsonParse(stream)) {
     // console.log(JSON.parse(d.toString()))
-    infos.push(toClusterInfo(JSON.parse(d.toString())))
+    infos.push(toClusterInfo(d.toString()))
   }
   return infos
 }
