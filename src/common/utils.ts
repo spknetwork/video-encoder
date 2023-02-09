@@ -108,7 +108,7 @@ const stream = response.data;
   let infos = []
   for await (const d of ndjsonParse(stream)) {
     // console.log(JSON.parse(d.toString()))
-    infos.push(toClusterInfo(d.toString()))
+    infos.push(toClusterInfo(d))
   }
   return infos
 }
