@@ -302,12 +302,20 @@ export class GatewayService {
         })
       }
       let setResult = {} as any
+      let last_pinged_diff_at
       if (payload.progressPct) {
         setResult['progress.pct'] = payload.progressPct
+        if(data.progress.pct !== payload.progressPct) {
+          setResult['last_pinged_diff_at'] = new Date()
+        }
       }
       if (payload.download_pct) {
         setResult['progress.download_pct'] = payload.download_pct
+        if(data.progress.download_pct !== payload.download_pct) {
+          setResult['last_pinged_diff_at'] = new Date()
+        }
       }
+      
       await this.jobs.findOneAndUpdate(
         {
           id: job_id,
