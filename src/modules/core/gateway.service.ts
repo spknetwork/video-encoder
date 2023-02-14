@@ -382,6 +382,14 @@ export class GatewayService {
           last_pinged: { $lt: new Date(new Date().getTime() - 1000 * 60 * 1) },
         },
         {
+          status: { $eq: JobStatus.RUNNING },
+          last_pinged_diff: { $lt: moment().subtract('5', 'minutes').toDate() },
+        },
+        {
+          status: { $eq: JobStatus.ASSIGNED },
+          last_pinged_diff: { $lt: moment().subtract('5', 'minutes').toDate() },
+        },
+        {
           status: { $eq: JobStatus.UPLOADING },
           pinning_at: {$lt: moment().subtract('40', 'minutes').toDate()} //Adjust as necessary over time.
         },
