@@ -306,7 +306,7 @@ export class GatewayService {
         setResult['progress.pct'] = payload.progressPct
         if(data.progress) {
           if(data.progress.pct !== payload.progressPct) {
-            setResult['last_pinged_diff_at'] = new Date()
+            setResult['last_pinged_diff'] = new Date()
           }
         }
       }
@@ -314,7 +314,7 @@ export class GatewayService {
         setResult['progress.download_pct'] = payload.download_pct
         if(data.progress) {
           if(data.progress.download_pct !== payload.download_pct) {
-            setResult['last_pinged_diff_at'] = new Date()
+            setResult['last_pinged_diff'] = new Date()
           }
         }
       }
@@ -402,6 +402,7 @@ export class GatewayService {
           assigned_date: null,
           assigned_to: null,
           last_pinged: null,
+          last_pinged_diff: null,
           pinning_at: null
         },
       })
