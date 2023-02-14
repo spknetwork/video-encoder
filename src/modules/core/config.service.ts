@@ -134,6 +134,7 @@ export class Config {
         cryptoAccounts: {
           hive: null,
         },
+        blockedHiveUsers: [] //Hive accounts you refuse to encode for
       },
       ipfs: {
         apiAddr: '/ip4/127.0.0.1/tcp/5001',

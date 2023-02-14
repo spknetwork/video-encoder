@@ -160,11 +160,19 @@ export class GatewayClient {
       }
     })
 
+    if (this.self.config.get('node.blockedHiveUsers').includes(data.data.queueJob.metadata.video_owner)) {
+      // Reject because creator is blocked
+      await this.rejectJob(data.data.queueJob.job.id);
+      return;
+    }
+
     console.log('jobInfo', JSON.stringify(data), {
       node_id: this.self.identityService.identity.id
     })
+    
 
-    if(data.data.queueJob.job) {
+
+   if(data.data.queueJob.job) {
       if (this.jobQueue.size === 0 && this.jobQueue.pending === (queue_concurrency - 1)) {
         this.queueJob(data.data.queueJob.job)
       }
