@@ -147,6 +147,7 @@ export class GatewayService {
             assigned_to: node_id,
             assigned_date: new Date(),
             last_pinged: new Date(),
+            last_pinged_diff: new Date()
           },
         },
       )
@@ -301,12 +302,13 @@ export class GatewayService {
           new_status: JobStatus.RUNNING,
         })
       }
+      const date = new Date()
       let setResult = {} as any
       if (payload.progressPct) {
         setResult['progress.pct'] = payload.progressPct
         if(data.progress) {
           if(data.progress.pct !== payload.progressPct) {
-            setResult['last_pinged_diff'] = new Date()
+            setResult['last_pinged_diff'] = date
           }
         }
       }
@@ -314,7 +316,7 @@ export class GatewayService {
         setResult['progress.download_pct'] = payload.download_pct
         if(data.progress) {
           if(data.progress.download_pct !== payload.download_pct) {
-            setResult['last_pinged_diff'] = new Date()
+            setResult['last_pinged_diff'] = date
           }
         }
       }
@@ -325,7 +327,7 @@ export class GatewayService {
         },
         {
           $set: {
-            last_pinged: new Date(),
+            last_pinged: date,
             ...setResult,
             ...(payload.progressPct > 1
               ? {
