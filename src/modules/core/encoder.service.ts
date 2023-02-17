@@ -15,6 +15,7 @@ import { EncodeStatus } from '../encoder.model'
 import URL from 'url'
 import Downloader from 'nodejs-file-downloader'
 import execa from 'execa'
+import moment from 'moment'
 PouchDB.plugin(PouchdbFind)
 PouchDB.plugin(PouchdbUpsert)
 
@@ -313,6 +314,9 @@ export class EncoderService {
           })
           this.pouch.upsert(jobInfo.id, (doc) => {
             doc.progress = progress
+            if(doc.progressPct !== progressPct) {
+              doc.last_updated_diff = new Date()
+            }
             doc.progressPct = progressPct
             return doc
           })
@@ -324,6 +328,15 @@ export class EncoderService {
       })
 
       var promy = new Promise((resolve, reject) => {
+
+        const timeoutCheck = setInterval(async() => {
+          const encoderData = await this.pouch.get(jobInfo.id);
+          if(new Date(encoderData.last_updated_diff) < moment().subtract('6', 'minute').toDate()) {
+            clearInterval(timeoutCheck)
+            return reject("Encoding process timed out")
+          }
+        }, 5000)
+
         ret
           .on('end', (stdout, stderr) => {
             console.log(stderr)
@@ -331,8 +344,10 @@ export class EncoderService {
               return reject('Invalid data found when processing input')
             }
             resolve(null)
+            clearInterval(timeoutCheck)
           })
           .on('error', (err) => {
+            clearInterval(timeoutCheck)
             reject(err)
           })
           .on('codecData', (data) => {
@@ -395,6 +410,7 @@ export class EncoderService {
       })
       await fs.rm(workfolder, {recursive: true, force: true})
       await fs.rm(downloadFolder, {recursive: true, force: true})
+      throw ex;
     }
   }
   async executeJob(jobInfoOrId: Object | string) {
