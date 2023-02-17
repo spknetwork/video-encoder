@@ -241,6 +241,42 @@ export const Resolvers = {
         return {
             queueLag: Math.round(queueLag),
             completeLag: Math.round(completeLag / 1000),
+            completeLagAdv: async (args) => {
+                const query = {
+                    created_at: {
+                        $gt: moment().subtract('1', 'day').toDate(),
+                        $exists: true
+                    }
+                }
+                const totalRecords = await encoderContainer.self.gateway.jobs.countDocuments(query)
+                const totalDocsLimits = args.percentile * totalRecords
+                const aggregateFunc = await encoderContainer.self.gateway.jobs.aggregate([{
+                    $match: {
+                        ...query,
+                    }
+                }, {
+                    $addFields: {
+                        duration: {
+                            $divide: [{$subtract: ['$completed_at', '$created_at']}, 1000]
+                        }
+                    }
+                }, {
+                    $sort: {
+                        duration: 1
+                    }
+                }, {
+                    $limit: Math.round(totalDocsLimits),
+                }, {
+                    $group:  {
+                     _id: "avg1",
+                     avg1: {
+                       $avg: "$duration"
+                     }
+                   }
+                }]).toArray()
+
+                return Math.round(aggregateFunc[0].avg1)
+            },
             averageByteRate: Math.round(averageByteRate)
         }
     },

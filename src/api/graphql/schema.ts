@@ -36,6 +36,7 @@ export const schema = `
     type GatewayStats {
         queueLag: Int
         completeLag: Int
+        completeLagAdv(percentile: Float): Int
         averageByteRate: Int
     }
 
