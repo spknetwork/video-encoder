@@ -288,6 +288,21 @@ export class EncoderService {
     })
 
     console.log('Started at', `in ${new Date().getTime() - startTime.getTime()}ms`)
+
+    let progressPct1
+    let progress1;
+
+    const progressInterval = setInterval(() => {
+      this.pouch.upsert(jobInfo.id, (doc) => {
+        doc.progress = progress1
+        if(doc.progressPct !== progressPct1) {
+          doc.last_updated_diff = new Date()
+        }
+        doc.progressPct = progressPct1
+        return doc
+      })
+    }, 500)
+
     let stage = 0
     let sizes = []
     let codecData
@@ -312,14 +327,8 @@ export class EncoderService {
             progress,
             progressPct,
           })
-          this.pouch.upsert(jobInfo.id, (doc) => {
-            doc.progress = progress
-            if(doc.progressPct !== progressPct) {
-              doc.last_updated_diff = new Date()
-            }
-            doc.progressPct = progressPct
-            return doc
-          })
+          progressPct1 = progressPct
+          progress1 = progress;
         }).bind(this),
       )
       ret.on('end', () => {
@@ -377,10 +386,13 @@ export class EncoderService {
 
       stage = stage + 1
     }
+    clearInterval(progressInterval)
+    
 
     var manifest = this._generateManifest(codecData, sizes)
     await fs.writeFile(Path.join(workfolder, 'manifest.m3u8'), manifest)
 
+    console.log('Adding IPFS content for job: ', jobInfo.id)
     try {
       await this.updateJob(jobInfo.id, {
         status: EncodeStatus.UPLOADING,
@@ -404,6 +416,7 @@ export class EncoderService {
       })
       return ipfsHash.cid.toString()
     } catch (ex) {
+      clearInterval(progressInterval)
       console.log(ex)
       this.updateJob(jobInfo.id, {
         status: EncodeStatus.FAILED,

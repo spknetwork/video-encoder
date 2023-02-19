@@ -111,6 +111,7 @@ export class GatewayClient {
           console.log('failing job ' + job_id)
           await this.failJob(job_id)
           clearInterval(pid)
+          delete this.activeJobs[job_id];
           console.log(ex)
         }
 
@@ -165,6 +166,7 @@ export class GatewayClient {
     })
 
     if(data.data.queueJob.job) {
+      console.log(this.jobQueue.size === 0, this.jobQueue.pending, (queue_concurrency - 1))
       if (this.jobQueue.size === 0 && this.jobQueue.pending === (queue_concurrency - 1)) {
         this.queueJob(data.data.queueJob.job)
       }
