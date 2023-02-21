@@ -113,10 +113,20 @@ export class ScoringService {
         load: loadCount,
       })
     }
-    return testOut.map((e) => {
+    return await Promise.all(testOut.map(async(e) => {
       e.byte_rate_share = e.byte_rate / aggregate_byte_rate
+      const nodeInfo = await this.gateway.clusterNodes.findOne({
+        id: e.node_id
+      })
+      if(nodeInfo) {
+        e['first_seen'] = nodeInfo['first_seen']
+        e['last_seen'] = nodeInfo['last_seen']
+        e['cryptoAccounts'] = nodeInfo['cryptoAccounts']
+        e['commit_hash'] = nodeInfo['commit_hash']
+        e['name'] = nodeInfo['name']
+      }
       return e
-    })
+    }))
   }
 
   /**

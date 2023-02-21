@@ -337,6 +337,13 @@ export class GatewayService {
           },
         },
       )
+      await this.clusterNodes.findOneAndUpdate({
+        id: node_id
+      }, {
+        $set: {
+          last_seen: new Date()
+        }
+      })
     } else {
     }
   }

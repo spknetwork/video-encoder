@@ -95,10 +95,14 @@ export const Resolvers = {
 
         const preferred_nodes = []
         for(let score_node of sorted_score) {
-            if(score_node.load === 0 && preferred_nodes.length !== 3) {
-                preferred_nodes.push(score_node.node_id)
+            if(score_node.last_seen) {
+                console.log(moment().subtract('1', 'day').date(),  score_node.last_seen)
+                if(score_node.load === 0 && preferred_nodes.length !== 6 && moment().subtract('1', 'day').toDate() < score_node.last_seen) {
+                    preferred_nodes.push(score_node.node_id)
+                }
             }
         }
+        console.log(sorted_score, preferred_nodes)
         
         //console.log('preferred_nodes', preferred_nodes, scoreMap)
         
