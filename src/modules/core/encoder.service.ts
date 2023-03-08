@@ -140,8 +140,9 @@ export class EncoderService {
     try {
       // const tileDoc = await TileDocument.load(this.self.ceramic, streamId)
       // const content = tileDoc.content
+      console.log('updateJob - function', updateData)
       await this.pouch.upsert(job_id, (doc) => {
-        console.log('updateData - 141', updateData)
+        console.log('updateJob - crdt', updateData)
         for (let [key, value] of Object.entries(updateData)) {
           doc[key] = value
         }
