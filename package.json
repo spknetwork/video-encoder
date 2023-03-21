@@ -38,7 +38,7 @@
     "express-graphql": "^0.12.0",
     "fluent-ffmpeg": "^2.1.2",
     "git-commit-info": "^2.0.1",
-    "graphql": "^16.5.0",
+    "graphql": "^15.8.0",
     "graphql-type-long": "^0.1.1",
     "ipfs-cluster-api": "^0.0.9",
     "ipfs-http-client": "^60.0.0",
@@ -58,8 +58,8 @@
     "node-schedule": "^2.1.0",
     "nodejs-file-downloader": "^4.9.3",
     "p-queue": "^7.3.0",
-    "pouchdb": "^7.2.2",
-    "pouchdb-find": "^7.2.2",
+    "pouchdb": "^8.0.1",
+    "pouchdb-find": "^8.0.1",
     "pouchdb-upsert": "^2.2.0",
     "reflect-metadata": "^0.1.13",
     "swagger-ui-express": "^4.3.0",
@@ -69,7 +69,7 @@
     "yargs": "^17.2.1"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.24",
+    "@types/jest": "^27.0.6",
     "@typescript-eslint/eslint-plugin": "^4.28.3",
     "@typescript-eslint/parser": "^4.28.3",
     "eslint": "^7.30.0",
@@ -78,7 +78,7 @@
     "jest": "^27.0.6",
     "nodemon": "^2.0.20",
     "prettier": "^2.4.1",
-    "ts-jest": "^27.0.5",
+    "ts-jest": "^27.0.6",
     "ts-node": "^10.4.0",
     "ts-node-dev": "^1.1.8",
     "typescript": "^4.5.2"
