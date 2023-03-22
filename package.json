@@ -38,7 +38,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "git-commit-info": "^2.0.1",
     "graphql": "^16.6.0",
-    "graphql-type-long": "^0.1.1",
+    "graphql-scalars": "^1.20.4",
     "graphql-yoga": "^3.7.3",
     "ipfs-cluster-api": "^0.0.9",
     "ipfs-http-client": "^60.0.0",

@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 // import { graphqlHTTP } from 'express-graphql'
 import { createSchema, createYoga } from 'graphql-yoga'
+import { GraphQLJSON, GraphQLLong } from 'graphql-scalars'
 import { buildSchema } from 'graphql'
 import { IPFSHTTPClient } from 'ipfs-http-client'
 import { CoreService } from '../modules/core/core.service'
@@ -44,6 +45,8 @@ export class EncoderApiModule {
       schema: createSchema({
         typeDefs: schema,
         resolvers: {
+          Long: GraphQLLong,
+          JSON: GraphQLJSON,
           Query: Resolvers
         }
       })
