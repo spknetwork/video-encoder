@@ -141,14 +141,16 @@ export class EncoderService {
       // const tileDoc = await TileDocument.load(this.self.ceramic, streamId)
       // const content = tileDoc.content
       console.log('updateJob - function', updateData)
-      await this.pouch.upsert(job_id, (doc) => {
-        console.log('updateJob - crdt', updateData)
-        for (let [key, value] of Object.entries(updateData)) {
-          doc[key] = value
-        }
-        doc['updated_at'] = new Date().toISOString()
-        
-        return doc;
+      await this.self.gatewayClient.dbQueue.add(async () => {
+        await this.pouch.upsert(job_id, (doc) => {
+          console.log('updateJob - crdt', updateData)
+          for (let [key, value] of Object.entries(updateData)) {
+            doc[key] = value
+          }
+          doc['updated_at'] = new Date().toISOString()
+          
+          return doc;
+        })
       })
       const docNew = await this.pouch.get(job_id)
       // for (let [key, value] of Object.entries(updateData)) {
@@ -180,10 +182,12 @@ export class EncoderService {
     const startTime = new Date();
     let download_pct = 0;
     const slowUpdate = setInterval(() => {
-      this.pouch.upsert(jobInfo.id, (doc) => {
-        doc.download_pct = download_pct;
-        return doc
-      })
+      this.self.gatewayClient.dbQueue.add(async () => [
+        this.pouch.upsert(jobInfo.id, (doc) => {
+          doc.download_pct = download_pct;
+          return doc
+        })
+      ])
     }, 500)
     const downloadProcess = execa('wget', [sourceUrl, '-O', Path.join(downloadFolder, `${jobInfo.id}_src.mp4`)], {
       // on
@@ -205,6 +209,7 @@ export class EncoderService {
         }
     }
     await downloadProcess
+    clearInterval(slowUpdate)
     // console.log(stdout)
     // const downloader = new Downloader({
     //   url: sourceUrl,
@@ -294,13 +299,15 @@ export class EncoderService {
     let progress1;
 
     const progressInterval = setInterval(() => {
-      this.pouch.upsert(jobInfo.id, (doc) => {
-        doc.progress = progress1
-        if(doc.progressPct !== progressPct1) {
-          doc.last_updated_diff = new Date()
-        }
-        doc.progressPct = progressPct1
-        return doc
+      this.self.gatewayClient.dbQueue.add(async () => {
+        await this.pouch.upsert(jobInfo.id, (doc) => {
+          doc.progress = progress1
+          if(doc.progressPct !== progressPct1) {
+            doc.last_updated_diff = new Date()
+          }
+          doc.progressPct = progressPct1
+          return doc
+        })
       })
     }, 500)
 
@@ -522,16 +529,18 @@ export class EncoderService {
     // const fakeStreamId = id
     
 
-    await this.pouch.upsert(initialJob.id, (doc) => {
-      for(let key in initialJob) {
-        doc[key] = initialJob[key]
-      }
-      // doc['streamId'] = tileDocument.id.toString()
-      doc['streamId'] = id
-      
-      doc['status'] = EncodeStatus.PENDING
-      doc['progress'] = 0
-      return doc
+    await this.self.gatewayClient.dbQueue.add(async () => {
+      await this.pouch.upsert(initialJob.id, (doc) => {
+        for(let key in initialJob) {
+          doc[key] = initialJob[key]
+        }
+        // doc['streamId'] = tileDocument.id.toString()
+        doc['streamId'] = id
+        
+        doc['status'] = EncodeStatus.PENDING
+        doc['progress'] = 0
+        return doc
+      })
     })
     return {
       id,

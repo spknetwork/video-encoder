@@ -11,6 +11,7 @@ export class GatewayClient {
   self: CoreService
   apiUrl: string
   jobQueue: PQueue
+  dbQueue: PQueue
   activeJobs: Record<string, Object>
 
   constructor(self) {
@@ -21,6 +22,8 @@ export class GatewayClient {
     this.encoderUnpinCheck = this.encoderUnpinCheck.bind(this)
 
     this.jobQueue = new PQueue({ concurrency: queue_concurrency })
+
+    this.dbQueue = new PQueue({ concurrency: 1 })
 
     this.activeJobs = {}
   }
@@ -84,11 +87,13 @@ export class GatewayClient {
                 }),
               })
 
-              await this.self.encoder.pouch.upsert('pin-allocation', (doc) => {
-                doc[job_id] = {
-                  cid: jobUpdate.content.outCid
-                }
-                return doc;
+              await this.dbQueue.add(async () => {
+                await this.self.encoder.pouch.upsert('pin-allocation', (doc) => {
+                  doc[job_id] = {
+                    cid: jobUpdate.content.outCid
+                  }
+                  return doc;
+                })
               })
               this.ipfsBootstrap().catch((e) => {
                 console.log(e)
@@ -238,9 +243,11 @@ export class GatewayClient {
           } catch {
             //If not pinned
           }
-          await this.self.encoder.pouch.upsert('pin-allocation', (doc) => {
-            delete doc[job_id]
-            return doc;
+          await this.dbQueue.add(async () => {
+            await this.self.encoder.pouch.upsert('pin-allocation', (doc) => {
+              delete doc[job_id]
+              return doc;
+            })
           })
         }
       }
