@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import { graphqlHTTP } from 'express-graphql'
+// import { graphqlHTTP } from 'express-graphql'
+import { createSchema, createYoga } from 'graphql-yoga'
 import { buildSchema } from 'graphql'
 import { IPFSHTTPClient } from 'ipfs-http-client'
 import { CoreService } from '../modules/core/core.service'
@@ -38,13 +39,19 @@ export class EncoderApiModule {
     const swaggerconfig = new DocumentBuilder().setTitle('SPK encoder node').build()
     const swaggerDocument = SwaggerModule.createDocument(app, swaggerconfig)
     SwaggerModule.setup('swagger', app, swaggerDocument)
+
+    const yoga = createYoga({
+      schema: createSchema({
+        typeDefs: schema,
+        resolvers: {
+          Query: Resolvers
+        }
+      })
+    })
+
     app.use(
       '/v1/graphql',
-      graphqlHTTP({
-        schema: buildSchema(schema),
-        graphiql: true,
-        rootValue: Resolvers,
-      }),
+      yoga
     )
 
     await app.listen(this.listenPort)

@@ -41,7 +41,7 @@ class JobInfo {
 }
 
 export const Resolvers = {
-    async queueJob(args: any) {
+    async queueJob(_, args: any) {
         const queuedJobs = await encoderContainer.self.gateway.jobs.find(
             {
                 $or: [{
@@ -96,13 +96,11 @@ export const Resolvers = {
         const preferred_nodes = []
         for(let score_node of sorted_score) {
             if(score_node.last_seen) {
-                console.log(moment().subtract('1', 'day').date(),  score_node.last_seen)
                 if(score_node.load === 0 && preferred_nodes.length !== 6 && moment().subtract('1', 'day').toDate() < score_node.last_seen) {
                     preferred_nodes.push(score_node.node_id)
                 }
             }
         }
-        console.log(sorted_score, preferred_nodes)
         
         //console.log('preferred_nodes', preferred_nodes, scoreMap)
         
@@ -167,7 +165,7 @@ export const Resolvers = {
             return b.byte_rate - a.byte_rate
         })
     },
-    async nodeScore(args: any) {
+    async nodeScore(_, args: any) {
         return await encoderContainer.self.gateway.scoring.nodeScore(args.node_id)
     },
     async ipfsBootstrap() {
@@ -245,7 +243,7 @@ export const Resolvers = {
         return {
             queueLag: Math.round(queueLag),
             completeLag: Math.round(completeLag / 1000),
-            completeLagAdv: async (args) => {
+            completeLagAdv: async (_, args) => {
                 const query = {
                     created_at: {
                         $gt: moment().subtract('1', 'day').toDate(),
@@ -284,7 +282,7 @@ export const Resolvers = {
             averageByteRate: Math.round(averageByteRate)
         }
     },
-    async jobInfo(args) {
+    async jobInfo(_, args) {
         const jobInfo = await encoderContainer.self.gateway.jobs.findOne({
             id: args.job_id
         })
