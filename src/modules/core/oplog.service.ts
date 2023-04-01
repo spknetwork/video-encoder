@@ -61,7 +61,7 @@ export class ActivityService {
             previous_status = jobInfo.status
         }
 
-        if(previous_status === "uploading") {
+        if(previous_status === "uploading" && action.status !== "complete") {
             try {
                 await IpfsClusterPinRm(jobInfo.result.cid, {
                     
