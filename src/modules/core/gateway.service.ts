@@ -482,7 +482,7 @@ export class GatewayService {
           await IpfsClusterPinAdd(cid, {
             metadata: job.storageMetadata,
             replicationFactorMin: 2,
-            replicationFactorMax: 3,
+            replicationFactorMax: 6,
           })
         }
       } else {
