@@ -2,6 +2,7 @@ import { Ed25519Provider } from "key-did-provider-ed25519";
 import Crypto from 'crypto'
 import KeyResolver from 'key-did-resolver'
 import { DID } from 'dids'
+import logger from 'node-color-log'
 
 import { CoreService } from "./core.service";
 
@@ -35,6 +36,6 @@ export class IdentityService {
             this.self.config.set('node.publicKey', this.identity.id);
         }
 
-        console.info(`Logged in with ${did.id}`)
+        logger.info(`Logged in with ${did.id}`)
     }
 }

@@ -22,6 +22,7 @@ import { ActivityService } from './oplog.service'
 import { ScoringService } from './gateway/scoring'
 import Axios from 'axios'
 import moment from 'moment'
+import logger from 'node-color-log'
 
 
 export class GatewayService {
@@ -160,7 +161,7 @@ export class GatewayService {
   async cancelJob(job_id) {}
 
   async rejectJob(job_id, node_id) {
-    console.log('job rejecting', job_id, node_id)
+    logger.info('job rejecting', job_id, node_id)
     const jobInfo = await this.jobs.findOne({
       id: job_id
     })
@@ -249,12 +250,12 @@ export class GatewayService {
     const jobInfo = await this.jobs.findOne({
       id: payload.job_id,
     })
-    console.log(payload)
-    console.log('received finish job from ' + did)
+    logger.info(payload)
+    logger.info('received finish job from ' + did)
     if (jobInfo.assigned_to === did) {
       if (payload.output) {
         if (payload.output.cid) {
-          console.log('accepted finish job from ' + did)
+          logger.info('accepted finish job from ' + did)
           await this.activity.changeState({
             job_id: payload.job_id,
             new_status: JobStatus.UPLOADING,
@@ -274,7 +275,7 @@ export class GatewayService {
             replicationFactorMin: 2,
             replicationFactorMax: 3,
           })
-          console.log(out)
+          logger.info(out)
         } else {
           throw new Error('Output CID not provided')
         }
@@ -354,7 +355,7 @@ export class GatewayService {
 
   async createJob(url: string, metadata, storageMetadata) {
     const { headers } = await Axios.head(url)
-    console.log(headers['content-length'])
+    logger.info(headers['content-length'])
     const obj = {
       id: uuid(),
       created_at: new Date(),
@@ -402,9 +403,9 @@ export class GatewayService {
         },
       ],
     })
-    console.log(`${await expiredJobs.count()} number of jobs has expired`)
+    logger.info(`${await expiredJobs.count()} number of jobs has expired`)
     for await (let job of expiredJobs) {
-      console.log(`Re-assigning ${job.id} from ${job.assigned_to}`)
+      logger.info(`Re-assigning ${job.id} from ${job.assigned_to}`)
       await this.activity.changeState({
         job_id: job.id,
         new_status: JobStatus.QUEUED,
@@ -443,12 +444,12 @@ export class GatewayService {
         status: JobStatus.UPLOADING,
       })
       .toArray()
-    console.log(jobs)
+    logger.info(jobs)
     for (let job of jobs) {
       const cid = (job.result as any).cid
-      console.log(cid)
+      logger.info(cid)
       const pinStatus = await this.ipfsCluster.status(cid)
-      console.log(pinStatus)
+      logger.info(pinStatus)
       let uploaded = false
       let pinning = false
       let pinQueued = false;
@@ -496,7 +497,7 @@ export class GatewayService {
         })
       }
       
-      console.log(`${job.id}: ${uploaded}`)
+      logger.info(`${job.id}: ${uploaded}`)
     }
   }
 
@@ -515,7 +516,7 @@ export class GatewayService {
       NodeSchedule.scheduleJob('45 * * * * *', this.runUploadingCheck)
       this.scoring = new ScoringService(this)
 
-      console.log(
+      logger.info(
         JSON.stringify(
           await this.self.identityService.identity.createJWS({
             hello: 'world',
@@ -546,9 +547,9 @@ void (async () => {
     })
     const a = await ipfsCluster.status('QmaCRG6bam6XJiXfVSSPkXAY388GUgv22bvhqkHNHeqL8h')
     const b = await ipfsCluster.status('QmeeZ8sDCG6krbLQ7h5Su4YXjKA6qVjGW6FeRCc7u5HiCP')
-    console.log(a)
-    console.log(b)
-    console.log(await ipfsCluster.pin.ls())
+    logger.info(a)
+    logger.info(b)
+    logger.info(await ipfsCluster.pin.ls())
     await ipfsCluster.pin.rm('QmaSL1VwhRERhHPnddb19o6K2BhRazVTtDZq1TVuqQA5dd')
   } catch {}
 })()

@@ -2,6 +2,7 @@ import moment from "moment";
 import { encoderContainer } from ".."
 import { peerList } from "../../common/utils";
 import {JobReason, JobStatus} from '../../modules/encoder.model'
+import logger from 'node-color-log'
 
 class JobInfo {
     data: any;
@@ -102,7 +103,7 @@ export const Resolvers = {
             }
         }
         
-        //console.log('preferred_nodes', preferred_nodes, scoreMap)
+        //logger.info('preferred_nodes', preferred_nodes, scoreMap)
         
         const nodeInfo = await encoderContainer.self.gateway.clusterNodes.findOne({
             node_id: node_id

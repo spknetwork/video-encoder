@@ -5,6 +5,7 @@ import PQueue from 'p-queue'
 import { TileDocument } from '@ceramicnetwork/stream-tile'
 import { EncodeStatus, JobStatus } from '../encoder.model'
 import GitCommitInfo from 'git-commit-info'
+import logger from 'node-color-log'
 
 const queue_concurrency = 1
 export class GatewayClient {
@@ -39,7 +40,7 @@ export class GatewayClient {
               job_id: remoteJob.id,
             }),
           })
-          console.log(data)
+          logger.info(data)
         } catch {
           //If job was already stolen. 
           return;
@@ -50,7 +51,7 @@ export class GatewayClient {
         this.activeJobs[job_id] = remoteJob;
 
         const job = await this.self.encoder.createJob(remoteJob.input.uri); //Creates an internal job
-        console.log(job)
+        logger.info(job)
 
         let pid;
         //Adds job to the queue.
@@ -68,15 +69,15 @@ export class GatewayClient {
         }, 5000)
 
         const eventListenr = async (jobUpdate) => {
-          console.log(jobUpdate)
+          logger.info(jobUpdate)
 
-          // console.log(jobUpdate.content.status, JobStatus.COMPLETE, jobUpdate.streamId.toString(), job.streamId)
+          // logger.info(jobUpdate.content.status, JobStatus.COMPLETE, jobUpdate.streamId.toString(), job.streamId)
           //Make sure the event is not destine for another job
           if (jobUpdate.streamId.toString() === job.streamId) {
-            console.log(`Current Status: ${job.streamId} ${jobUpdate.content.status}`)
+            logger.info(`Current Status: ${job.streamId} ${jobUpdate.content.status}`)
             //Ensure the job is complete and not something else
             if (jobUpdate.content.status === JobStatus.COMPLETE) {
-              console.log(`Encode Complete ${job_id} submitting`)
+              logger.info(`Encode Complete ${job_id} submitting`)
               //Submitting the job
               await Axios.post(`${this.apiUrl}/api/v0/gateway/finishJob`, {
                 jws: await this.self.identityService.identity.createJWS({
@@ -96,7 +97,7 @@ export class GatewayClient {
                 })
               })
               this.ipfsBootstrap().catch((e) => {
-                console.log(e)
+                logger.error(e)
               })
               delete this.activeJobs[job_id];
               clearInterval(pid)
@@ -113,25 +114,25 @@ export class GatewayClient {
           //TODO: Probably should redo the whole remote and local job ID thing
           await this.self.encoder.executeJob(job.id)
         } catch(ex) {
-          console.log('failing job ' + job_id)
+          logger.error('failing job ' + job_id)
           await this.failJob(job_id)
           clearInterval(pid)
           delete this.activeJobs[job_id];
-          console.log(ex)
+          logger.error(ex)
         }
 
         
       })
     } catch (ex) {
-      console.log(ex)
+      logger.error(ex)
     }
 
     //this.self.encoder.createJob(jobInfo.input.url)
   }
   async getNewJobs() {
-    console.log(this.apiUrl)
+    logger.info(this.apiUrl)
     /*const { data } = await Axios.get(`${this.apiUrl}/api/v0/gateway/getJob`)
-    console.log(data)*/
+    logger.info(data)*/
     const { data } = await Axios.post(`${this.apiUrl}/v1/graphql`, {
       query: `
       query Query($node_id: String) {
@@ -166,12 +167,12 @@ export class GatewayClient {
       }
     })
 
-    console.log('jobInfo', JSON.stringify(data), {
+    logger.info('jobInfo', JSON.stringify(data), {
       node_id: this.self.identityService.identity.id
     })
 
     if(data.data.queueJob.job) {
-      console.log(this.jobQueue.size === 0, this.jobQueue.pending, (queue_concurrency - 1))
+      logger.info(this.jobQueue.size === 0, this.jobQueue.pending, (queue_concurrency - 1))
       if (this.jobQueue.size === 0 && this.jobQueue.pending === (queue_concurrency - 1)) {
         this.queueJob(data.data.queueJob.job)
       }
@@ -214,10 +215,10 @@ export class GatewayClient {
   }
 
   async encoderUnpinCheck() {
-    console.log(`[GC] Running unpin cycle`)
+    logger.info(`[GC] Running unpin cycle`)
     try {
       const doc:Record<string, {cid: string}> = await this.self.encoder.pouch.get('pin-allocation')
-      console.log(doc)
+      logger.info(doc)
       for(let [job_id, docData] of Object.entries(doc)) {
         const { data } = await Axios.post(`${this.apiUrl}/v1/graphql`, {
           query: `
@@ -235,9 +236,9 @@ export class GatewayClient {
         const jobInfo = data.data.jobInfo
         
 
-        console.log(jobInfo)
+        logger.info(jobInfo)
         if(jobInfo.status === "complete") {
-          console.log(`[GC] Unpinning ${docData.cid} from ${job_id}`)
+          logger.info(`[GC] Unpinning ${docData.cid} from ${job_id}`)
           try {
             await this.self.ipfs.pin.rm(docData.cid)
           } catch {
@@ -252,22 +253,22 @@ export class GatewayClient {
         }
       }
     } catch(ex) {
-      // console.log(ex)
+      // logger.error(ex)
     }
-    console.log('[GC] Running IPFS GC')
+    logger.info('[GC] Running IPFS GC')
     for await(let gcResult of this.self.ipfs.repo.gc()) {
-      // console.log(gcResult)
+      // logger.info(gcResult)
       //Don't log here unless you want spam
     }
-    console.log('[GC] IPFS GC complete')
+    logger.info('[GC] IPFS GC complete')
   }
 
   async start() {
     if (this.self.config.get('remote_gateway.enabled')) {
       this.apiUrl = this.self.config.get('remote_gateway.api') || 'http://127.0.0.1:4005'
-      console.log(`${Math.round(Math.random() * (60 + 1))} * * * * *`)
+      logger.info(`${Math.round(Math.random() * (60 + 1))} * * * * *`)
 
-      console.log('Startup: Checking if IPFS is running')
+      logger.info('Startup: Checking if IPFS is running')
       try {
         await (await this.self.ipfs.id()).id
       } catch {
@@ -295,7 +296,7 @@ export class GatewayClient {
             }),
           })
         } catch (ex) {
-          console.log(ex)
+          logger.error(ex)
           process.exit(0)
         }
       }, 1000)
@@ -303,13 +304,13 @@ export class GatewayClient {
   }
   async stop() {
     NodeSchedule.gracefulShutdown();
-    console.log(Object.keys(this.activeJobs))
+    logger.info(Object.keys(this.activeJobs))
     for (let job_id of Object.keys(this.activeJobs)) {
-      console.log('Cancelling all jobs')
+      logger.info('Cancelling all jobs')
       try {
         await this.rejectJob(job_id)
       } catch (ex) {
-        console.log(ex)
+        logger.error(ex)
       }
     }
   }

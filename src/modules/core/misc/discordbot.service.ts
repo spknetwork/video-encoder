@@ -7,6 +7,7 @@ import {
   Partials,
   APIEmbedField
 } from 'discord.js'
+import logger from 'node-color-log'
 import { CoreService } from '../core.service'
 
 export class DiscordBot {
@@ -25,7 +26,7 @@ export class DiscordBot {
         id: did,
     })
     const embedFields:Array<APIEmbedField> = []
-    console.log(nodeScores)
+    logger.info(nodeScores)
     for(let field in nodeScores) {
         embedFields.push({
             name: field,
@@ -73,7 +74,7 @@ export class DiscordBot {
         const nodeOwner = await this.self.gateway.clusterNodes.findOne({
             id: did,
         })
-        console.log(nodeScores)
+        logger.info(nodeScores)
         for(let field in nodeScores) {
             embedFields.push({
                 name: field,

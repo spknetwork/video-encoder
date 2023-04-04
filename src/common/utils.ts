@@ -1,4 +1,5 @@
 import Axios from 'axios'
+import logger from 'node-color-log'
 
 /**
  * @template {Object} T
@@ -99,15 +100,15 @@ const ndjsonParse = async function* (stream) {
 const stream = response.data;
 
 // stream.on('data', data => {
-//     console.log(data);
+//     logger.info(data);
 // });
 
 // stream.on('end', () => {
-//     console.log("stream done");
+//     logger.info("stream done");
 // });
   let infos = []
   for await (const d of ndjsonParse(stream)) {
-    // console.log(JSON.parse(d.toString()))
+    // logger.info(JSON.parse(d.toString()))
     infos.push(toClusterInfo(d))
   }
   return infos
