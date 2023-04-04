@@ -25,6 +25,8 @@ import moment from 'moment'
 import logger from 'node-color-log'
 
 
+const uploadCheckQueue = new PQueue({concurrency: 40})
+
 export class GatewayService {
   self: CoreService
   events: EventEmitter
@@ -446,59 +448,63 @@ export class GatewayService {
       .toArray()
     logger.info(jobs)
     for (let job of jobs) {
-      const cid = (job.result as any).cid
-      logger.info(cid)
-      const pinStatus = await this.ipfsCluster.status(cid)
-      logger.info(pinStatus)
-      let uploaded = false
-      let pinning = false
-      let pinQueued = false;
-      for (let mapEntry of Object.values(pinStatus.peer_map) as any[]) {
-        if (mapEntry.status === 'pinned') {
-          uploaded = true
+      uploadCheckQueue.add(async () => {
+
+        const cid = (job.result as any).cid
+        logger.info(cid)
+        const pinStatus = await this.ipfsCluster.status(cid)
+        logger.info(pinStatus)
+        let uploaded = false
+        let pinning = false
+        let pinQueued = false;
+        for (let mapEntry of Object.values(pinStatus.peer_map) as any[]) {
+          if (mapEntry.status === 'pinned') {
+            uploaded = true
+          }
+          if (mapEntry.status === 'pinning') {
+            pinning = true
+          }
+          if(mapEntry.status === "pin_queued") {
+            pinQueued = true;
+          }
         }
-        if (mapEntry.status === 'pinning') {
-          pinning = true
-        }
-        if(mapEntry.status === "pin_queued") {
-          pinQueued = true;
-        }
-      }
-      if (uploaded) {
-        await this.activity.changeState({
-          job_id: job.id,
-          new_status: JobStatus.COMPLETE,
-          assigned_to: job.assigned_to,
-        })
-        await this.jobs.findOneAndUpdate({
-          _id: job._id
-        }, {
-          $set: {
-            status: JobStatus.COMPLETE,
-            completed_at: new Date(),
-          },
-        })
-      } else if (!pinning) {
-        if(!pinQueued) {
-          await IpfsClusterPinAdd(cid, {
-            metadata: job.storageMetadata,
-            replicationFactorMin: 2,
-            replicationFactorMax: 6,
+        if (uploaded) {
+          await this.activity.changeState({
+            job_id: job.id,
+            new_status: JobStatus.COMPLETE,
+            assigned_to: job.assigned_to,
+          })
+          await this.jobs.findOneAndUpdate({
+            _id: job._id
+          }, {
+            $set: {
+              status: JobStatus.COMPLETE,
+              completed_at: new Date(),
+            },
+          })
+        } else if (!pinning) {
+          if(!pinQueued) {
+            await IpfsClusterPinAdd(cid, {
+              metadata: job.storageMetadata,
+              replicationFactorMin: 2,
+              replicationFactorMax: 6,
+            })
+          }
+        } else {
+          await this.jobs.findOneAndUpdate({
+            _id: job._id,
+            pinning_at: null
+          }, {
+            $set: {
+              pinning_at: new Date()
+            }
           })
         }
-      } else {
-        await this.jobs.findOneAndUpdate({
-          _id: job._id,
-          pinning_at: null
-        }, {
-          $set: {
-            pinning_at: new Date()
-          }
-        })
-      }
-      
-      logger.info(`${job.id}: ${uploaded}`)
+        
+        logger.info(`${job.id}: ${uploaded}`)
+      })
     }
+    await uploadCheckQueue.onIdle()
   }
 
   async start() {
