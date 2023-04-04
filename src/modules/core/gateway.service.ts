@@ -443,6 +443,10 @@ export class GatewayService {
     const jobs = await this.jobs
       .find({
         status: JobStatus.UPLOADING,
+      }, {
+        sort: {
+          created_at: -1
+        }
       })
       .toArray()
     console.log(jobs)
