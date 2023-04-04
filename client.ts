@@ -29,9 +29,7 @@ const ClientKey =
   }
   
 void (async () => {
-
     logger.info('P2P interface starting up')
-
     const ceramic = new CeramicClient('https://ceramic-clay.3boxlabs.com') //Using the public node for now.
     const idListener = await PeerId.createFromJSON(ClientKey)
     const libp2p = await Libp2p.create({

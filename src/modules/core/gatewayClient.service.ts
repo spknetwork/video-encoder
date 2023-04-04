@@ -30,6 +30,7 @@ export class GatewayClient {
   }
 
   async queueJob(remoteJob) {
+    logger.info('Attempting to queue remote job', remoteJob)
     try {
       this.jobQueue.add(async () => {
         //Asks gateway to accept the job
@@ -51,7 +52,7 @@ export class GatewayClient {
         this.activeJobs[job_id] = remoteJob;
 
         const job = await this.self.encoder.createJob(remoteJob.input.uri); //Creates an internal job
-        logger.info(job)
+        logger.info('Internal job created', job)
 
         let pid;
         //Adds job to the queue.
@@ -130,7 +131,7 @@ export class GatewayClient {
     //this.self.encoder.createJob(jobInfo.input.url)
   }
   async getNewJobs() {
-    logger.info(this.apiUrl)
+    logger.info('Getting new jobs from', this.apiUrl)
     /*const { data } = await Axios.get(`${this.apiUrl}/api/v0/gateway/getJob`)
     logger.info(data)*/
     const { data } = await Axios.post(`${this.apiUrl}/v1/graphql`, {
