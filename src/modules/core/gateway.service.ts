@@ -96,6 +96,7 @@ export class GatewayService {
         last_seen: new Date(),
         first_seen: new Date(),
         banned: false,
+        cryptoAccounts: nodeInfo.cryptoAccounts,
       } as any)
     } else {
       await this.clusterNodes.findOneAndUpdate(data, {
