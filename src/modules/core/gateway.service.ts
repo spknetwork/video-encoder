@@ -274,7 +274,7 @@ export class GatewayService {
 
           const out = await IpfsClusterPinAdd(payload.output.cid, {
             metadata: jobInfo.storageMetadata,
-            replicationFactorMin: 2,
+            replicationFactorMin: 1,
             replicationFactorMax: 3,
           })
           console.log(out)
@@ -490,7 +490,7 @@ export class GatewayService {
           if(!pinQueued) {
             await IpfsClusterPinAdd(cid, {
               metadata: job.storageMetadata,
-              replicationFactorMin: 2,
+              replicationFactorMin: 1,
               replicationFactorMax: 6,
             })
           }
