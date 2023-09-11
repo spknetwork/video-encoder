@@ -16,6 +16,7 @@ import URL from 'url'
 import Downloader from 'nodejs-file-downloader'
 import execa from 'execa'
 import moment from 'moment'
+import logger from 'node-color-log'
 PouchDB.plugin(PouchdbFind)
 PouchDB.plugin(PouchdbUpsert)
 
@@ -110,7 +111,7 @@ const tutils = {
       res = res[0]
       res = res.split('x')
     } else {
-      console.log('RES IS NULL , ', res)
+      logger.info('RES IS NULL , ', res)
       return null
     }
     let width = parseInt(res[0])
@@ -140,10 +141,10 @@ export class EncoderService {
     try {
       // const tileDoc = await TileDocument.load(this.self.ceramic, streamId)
       // const content = tileDoc.content
-      console.log('updateJob - function', updateData)
+      logger.info('updateJob - function', updateData)
       await this.self.gatewayClient.dbQueue.add(async () => {
         await this.pouch.upsert(job_id, (doc) => {
-          console.log('updateJob - crdt', updateData)
+          logger.info('updateJob - crdt', updateData)
           for (let [key, value] of Object.entries(updateData)) {
             doc[key] = value
           }
@@ -163,7 +164,7 @@ export class EncoderService {
         streamId: docNew.streamId,
       })
     } catch (ex) {
-      console.log(ex)
+      logger.error(ex)
     }
   }
   async executeJobRaw(jobInfo, streamId) {
@@ -197,12 +198,12 @@ export class EncoderService {
       //   downloadProgress.stderr.pipe(process.stdout)
         for await(let chunk of downloadProcess.stderr) {
           const outArray = chunk.toString().split(' ')
-          // console.log(outArray)
+          // logger.info(outArray)
           const percentage = outArray.find(e => e.includes('%'));
           if(percentage) {
               const pctArray = percentage.split('%')
               if(Number(pctArray[0]) !== 0) {
-                  // console.log(pctArray[0])
+                  // logger.info(pctArray[0])
                   download_pct = Number(pctArray[0])
               }
           }
@@ -210,7 +211,7 @@ export class EncoderService {
     }
     await downloadProcess
     clearInterval(slowUpdate)
-    // console.log(stdout)
+    // logger.info(stdout)
     // const downloader = new Downloader({
     //   url: sourceUrl,
     //   directory: downloadFolder,
@@ -218,7 +219,7 @@ export class EncoderService {
     //   maxAttempts: 6, //Default is 1.
     //   onError: function (error) {
     //     //You can also hook into each failed attempt.
-    //     console.log("Error from attempt ", error);
+    //     logger.info("Error from attempt ", error);
     //   },
     //   onProgress: (inputPercentage, chunk, remainingSize) => {
     //     //Gets called with each chunk.
@@ -232,12 +233,12 @@ export class EncoderService {
     //   clearInterval(slowUpdate)
     // } catch (error) {
     //   //If all attempts fail, the last error is thrown.
-    //   console.log("Final fail", error);
+    //   logger.info("Final fail", error);
     //   fs.rmdirSync(downloadFolder)
     //   clearInterval(slowUpdate)
     //   throw error;
     // }
-    console.log(`Downloaded to `, srcVideo, `in ${new Date().getTime() - startTime.getTime()}ms`)
+    logger.info(`Downloaded to `, srcVideo, `in ${new Date().getTime() - startTime.getTime()}ms`)
 
     var command = ffmpeg(srcVideo)
 
@@ -251,7 +252,7 @@ export class EncoderService {
           }
         }*/
         if(e) {
-          console.log(e)
+          logger.error(e)
         }
         if(enc) {
           for (var key of Object.keys(enc)) {
@@ -263,7 +264,7 @@ export class EncoderService {
         return resolve('libx264')
       }),
     )
-    console.log(`Info: using ${codec}`)
+    logger.info(`Info: using ${codec}`)
     if(codec === "h264_qsv") {
       command.addOption('-preset', 'slow')
       command.addOption('-look_ahead', '1')
@@ -293,7 +294,7 @@ export class EncoderService {
       status: EncodeStatus.RUNNING,
     })
 
-    console.log('Started at', `in ${new Date().getTime() - startTime.getTime()}ms`)
+    logger.info('Started at', `in ${new Date().getTime() - startTime.getTime()}ms`)
 
     let progressPct1
     let progress1;
@@ -322,7 +323,7 @@ export class EncoderService {
       ret.on(
         'progress',
         ((progress) => {
-          //console.log(jobInfo)
+          //logger.info(jobInfo)
           for (let key in progress) {
             progress[key] = progress[key] || 0
           }
@@ -356,7 +357,7 @@ export class EncoderService {
 
         ret
           .on('end', (stdout, stderr) => {
-            console.log(stderr)
+            logger.error(stderr)
             if(stderr.includes('Invalid data found when processing input')) {
               return reject('Invalid data found when processing input')
             }
@@ -377,7 +378,7 @@ export class EncoderService {
       await fs.mkdir(Path.join(workfolder, `${String(profile.size.split('x')[1])}p`))
 
       //ret.save(path.join(workfolder, `${String(size.split('x')[1])}p`, 'index.m3u8'))
-      console.log(Path.join(workfolder, `${String(profile.size.split('x')[1])}p`, 'index.m3u8'))
+      logger.info(Path.join(workfolder, `${String(profile.size.split('x')[1])}p`, 'index.m3u8'))
 
       ret.addOption(`-segment_format`, 'mpegts')
       ret.addOption(
@@ -400,7 +401,7 @@ export class EncoderService {
     var manifest = this._generateManifest(codecData, sizes)
     await fs.writeFile(Path.join(workfolder, 'manifest.m3u8'), manifest)
 
-    console.log('Adding IPFS content for job: ', jobInfo.id)
+    logger.info('Adding IPFS content for job: ', jobInfo.id)
     try {
       await this.updateJob(jobInfo.id, {
         status: EncodeStatus.UPLOADING,
@@ -415,7 +416,7 @@ export class EncoderService {
       
       await fs.rm(workfolder, {recursive: true, force: true})
       await fs.rm(downloadFolder, {recursive: true, force: true})
-      console.log('Removing local temp content', workfolder, ipfsHash.cid.toString())
+      logger.info('Removing local temp content', workfolder, ipfsHash.cid.toString())
 
       await this.updateJob(jobInfo.id, {
         status: EncodeStatus.COMPLETE,
@@ -425,7 +426,7 @@ export class EncoderService {
       return ipfsHash.cid.toString()
     } catch (ex) {
       clearInterval(progressInterval)
-      console.log(ex)
+      logger.error(ex)
       this.updateJob(jobInfo.id, {
         status: EncodeStatus.FAILED,
       })
@@ -444,7 +445,7 @@ export class EncoderService {
         //jobInfo = (await TileDocument.load(this.self.ceramic, streamId)).content
         jobInfo = await this.pouch.get(jobInfoOrId)
       } catch (ex) {
-        console.log(ex)
+        logger.error(ex)
         throw new Error('Error not streamId')
       }
     } else if (typeof jobInfoOrId === 'object') {
@@ -457,7 +458,7 @@ export class EncoderService {
     // })
 
     const out = await this.executeJobRaw(jobInfo, streamId)
-    console.log(out)
+    logger.info(out)
   }
   /**
    * generate the master manifest for the transcoded video.
@@ -475,7 +476,7 @@ export class EncoderService {
       )},NAME=${tutils.getHeight(size)}\n`
     }
     let result = master
-    console.log('availableSizes: ', sizes)
+    logger.info('availableSizes: ', sizes)
     sizes.forEach((size) => {
       // log(`format: ${JSON.stringify(formats[size])} , size: ${size}`)
       result += resolutionLine(size)
@@ -549,7 +550,7 @@ export class EncoderService {
   }
   async start() {
     /*const data = await this.createJob('Qma9ZjjtH7fdLWSrMU43tFihvSN59aQdes7f5KW6vGGk6e', 'QmctF7GPunpcLu3Fn77Ypo657TA9GpTiipSDUUMoD2k5Kq', 'did:3:kjzl6cwe1jw14aijwpxwaa1ybg708bp9n5jqt8q89j6yrdqvt8tfxdxw1q5dpxh')
-        console.log(data)
+        logger.info(data)
         this.executeJob(data.streamId)*/
   }
 }

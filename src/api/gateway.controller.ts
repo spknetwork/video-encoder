@@ -4,6 +4,7 @@
  */
 import { BadRequestException, Body, HttpCode, HttpStatus, Post, Put, Query } from '@nestjs/common'
 import { Controller, Get, Param } from '@nestjs/common'
+import logger from 'node-color-log'
 import { EncoderService } from '../modules/core/encoder.service'
 import { JobStatus } from '../modules/encoder.model'
 import { encoderContainer } from './index'
@@ -17,9 +18,9 @@ export class GatewayApiController {
 
   @Post('/updateNode')
   async updateNode(@Body() body) {
-    console.log(body)
+    logger.info(body)
     const { payload, did } = await unwrapJWS(body.jws)
-    console.log(payload, did)
+    logger.info(payload, did)
     encoderContainer.self.gateway.updateNode(did, payload.node_info)
   }
 
@@ -46,7 +47,7 @@ export class GatewayApiController {
 
   @Get('/nodeJobs/:nodeId')
   async nodeJobs(@Param('nodeId') nodeId) {
-    console.log(nodeId)
+    logger.info(nodeId)
   }
 
   /**
@@ -69,7 +70,7 @@ export class GatewayApiController {
   @Post('/acceptJob')
   async acceptJob(@Body() body) {
     const { kid, payload, did } = await unwrapJWS(body.jws)
-    console.log(kid, payload, did)
+    logger.info(kid, payload, did)
 
     
     await encoderContainer.self.gateway.acceptJob(payload.job_id, did)
@@ -88,7 +89,7 @@ export class GatewayApiController {
 
   @Post('/failJob')
   async failJob(@Body() body) {
-    console.log(body)
+    logger.info(body)
     const {payload, did} = await unwrapJWS(body.jws)
 
     await encoderContainer.self.gateway.rejectJob(payload.job_id, did)
@@ -148,7 +149,7 @@ export class GatewayApiController {
   @Get('/sync')
   async syncFile(@Param('job_id') job_id) {
 
-    console.log(job_id)
+    logger.info(job_id)
   }
 
   @Get('jobstatus/:job_id')

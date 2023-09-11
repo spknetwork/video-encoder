@@ -13,6 +13,7 @@ import { decode, encode } from './frame-codec.util'
 import { MESSAGE_TYPES } from './messages.model'
 import pipe from 'it-pipe'
 import Pushable from 'it-pushable'
+import logger from 'node-color-log'
 
 const PEERINFO =  {
   id: 'QmctF7GPunpcLu3Fn77Ypo657TA9GpTiipSDUUMoD2k5Kq',
@@ -36,18 +37,18 @@ export class Lib2pService {
 
     }
     async connectionHandler({ connection, stream, protocol }) {
-      console.log(connection)
+      logger.info(connection)
       const pushable = Pushable()
       pipe(pushable, stream.sink)
       let listener;
       for await (const item of stream.source) {
         const decodedMessage = decode(item._bufs[0])
-        console.log(decodedMessage)
+        logger.info(decodedMessage)
         
         if(decodedMessage.type === MESSAGE_TYPES.SUBSCRIBE_UPDATE) {
           listener = this.self.encoder.events.on('job.progress', (streamId, statusUpdate) => {
             if(streamId === decodedMessage.streamId) {
-              console.log(statusUpdate)
+              logger.info(statusUpdate)
               pushable.push(encode({
                 type: MESSAGE_TYPES.STATUS_UPDATE,
                 statusUpdate
@@ -59,8 +60,8 @@ export class Lib2pService {
           
         }
         if(decodedMessage.type === MESSAGE_TYPES.REQUEST_ENCODE_JOB) {
-          console.log(stream)
-          console.log(connection)
+          logger.info(stream)
+          logger.info(connection)
           
           const data = await this.self.encoder.createJob(decodedMessage.ipfsHash, connection.remotePeer.toString())
 
@@ -74,7 +75,7 @@ export class Lib2pService {
       }
       //this.self.encoder.events.off
       //clear event listeners
-      console.log('stream is ending')
+      logger.info('stream is ending')
     }
 
     async start() {
@@ -82,7 +83,7 @@ export class Lib2pService {
           return;
         }
         const idListener = await PeerId.createFromJSON(PEERINFO)
-        console.log('P2P interface starting up')
+        logger.info('P2P interface starting up')
         this.libp2p = await Libp2p.create({
             peerId: idListener,
             modules: {
@@ -129,16 +130,16 @@ export class Lib2pService {
 
         // start libp2p
         await this.libp2p.start()
-        console.log(this.libp2p.addresses)
+        logger.info(this.libp2p.addresses)
         setInterval(() => {
-            //console.log(this.libp2p.connections.size)
+            //logger.info(this.libp2p.connections.size)
         }, 5000)
         const handler = async ({ connection, stream, protocol }) => {
             // use stream or connection according to the needs
-            console.log(connection, stream, protocol)
+            logger.info(connection, stream, protocol)
             for await (const item of stream.source) {
-                console.log(item)
-                console.log(decode(item._bufs[0]))
+                logger.info(item)
+                logger.info(decode(item._bufs[0]))
             }
           }
           

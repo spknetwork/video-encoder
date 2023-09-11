@@ -54,6 +54,7 @@
     "libp2p-tcp": "^0.17.2",
     "moment": "^2.29.3",
     "mongodb": "^4.2.2",
+    "node-color-log": "^10.0.2",
     "node-graceful-shutdown": "^1.1.0",
     "node-schedule": "^2.1.0",
     "nodejs-file-downloader": "^4.9.3",
