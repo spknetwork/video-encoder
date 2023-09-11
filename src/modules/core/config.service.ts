@@ -106,7 +106,7 @@ export class Config {
   }
   async open() {
     if (!(await this.datastore.has(new Key('config')))) {
-      this.init()
+      await this.init()
       return
     }
     var buf = await this.datastore.get(new Key('config'))
