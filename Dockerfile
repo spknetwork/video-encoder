@@ -1,6 +1,10 @@
 FROM node:16.15.1-alpine
-RUN apk add  --no-cache ffmpeg
 
+# Install OS dependencies
+RUN apk add  --no-cache ffmpeg
+# Install git for reporting commit_hash
+RUN apk --no-cache add git
+COPY .git/* ./.git/
 
 # Create app directory
 WORKDIR /home/github/app
